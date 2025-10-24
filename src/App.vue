@@ -1,9 +1,28 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import MainLayout from '@/components/layout/MainLayout.vue'
+import AppHeader from '@/components/layout/AppHeader.vue'
+import TaskList from '@/components/task/TaskList.vue'
+import TaskModal from '@/components/task/TaskModal.vue'
+
+const showCreateModal = ref(false)
+
+const handleOpenCreateModal = () => {
+  showCreateModal.value = true
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-white">
-    <h1 class="text-3xl font-bold text-center p-8">Tone Clone POC</h1>
-    <p class="text-center text-gray-600">Vue.js + TypeScript + Pinia</p>
-  </div>
+  <MainLayout>
+    <template #header>
+      <AppHeader @open-create-modal="handleOpenCreateModal" />
+    </template>
+
+    <TaskList />
+
+    <TaskModal
+      :open="showCreateModal"
+      @close="showCreateModal = false"
+    />
+  </MainLayout>
 </template>
