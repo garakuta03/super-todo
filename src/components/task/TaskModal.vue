@@ -1,26 +1,121 @@
 <script setup lang="ts">
-// タスク作成モーダル（後で実装）
+import { ref, watch } from 'vue'
+import { useTaskStore } from '@/stores/taskStore'
+import { useListStore } from '@/stores/listStore'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
+
 interface Props {
   open: boolean
 }
 
-defineProps<Props>()
-defineEmits<{
+const props = defineProps<Props>()
+const emit = defineEmits<{
   close: []
 }>()
+
+const taskStore = useTaskStore()
+const listStore = useListStore()
+
+const title = ref('')
+const continueCreating = ref(false)
+
+// モーダルが閉じる時にリセット
+watch(() => props.open, (newValue) => {
+  if (!newValue) {
+    title.value = ''
+    continueCreating.value = false
+  }
+})
+
+const handleSubmit = () => {
+  if (!title.value.trim()) return
+  if (!listStore.currentListId) return
+
+  taskStore.createTask({
+    title: title.value.trim(),
+    status: 'TODO',
+    completed: false,
+    listId: listStore.currentListId,
+    order: taskStore.allTasks.length
+  })
+
+  if (continueCreating.value) {
+    title.value = ''
+  } else {
+    emit('close')
+  }
+}
+
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    handleSubmit()
+  }
+}
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full">
-      <h2 class="text-lg font-bold mb-4">タスク作成</h2>
-      <p class="text-gray-600 text-sm">後で実装します...</p>
-      <button
-        @click="$emit('close')"
-        class="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-      >
-        閉じる
-      </button>
-    </div>
-  </div>
+  <Dialog :open="open" @update:open="(val) => !val && emit('close')">
+    <DialogContent class="max-w-md">
+      <DialogHeader>
+        <DialogTitle>タスクを作成</DialogTitle>
+      </DialogHeader>
+
+      <div class="space-y-4 mt-4">
+        <!-- タイトル入力 -->
+        <Input
+          v-model="title"
+          placeholder="タスクを入力..."
+          @keydown="handleKeydown"
+          autofocus
+        />
+
+        <!-- 続けて作成チェックボックス -->
+        <div class="flex items-center gap-2">
+          <Checkbox
+            id="continue"
+            v-model:checked="continueCreating"
+          />
+          <label
+            for="continue"
+            class="text-sm text-gray-600 cursor-pointer"
+          >
+            続けて作成
+          </label>
+        </div>
+
+        <!-- アクション -->
+        <div class="flex items-center justify-between pt-2">
+          <div class="flex items-center gap-2">
+            <button class="text-sm text-gray-600 hover:text-gray-900">
+              👤 担当者を追加
+            </button>
+            <button class="text-sm text-gray-600 hover:text-gray-900">
+              📅
+            </button>
+          </div>
+
+          <div class="flex gap-2">
+            <Button variant="outline" @click="emit('close')">
+              キャンセル
+            </Button>
+            <Button
+              @click="handleSubmit"
+              :disabled="!title.trim()"
+            >
+              追加する
+            </Button>
+          </div>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
 </template>
