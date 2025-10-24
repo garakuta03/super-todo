@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useTaskStore } from '@/stores/taskStore'
 import { useListStore } from '@/stores/listStore'
 import TaskRow from './TaskRow.vue'
+import TaskPanel from './TaskPanel.vue'
 import type { Task } from '@/lib/types'
 
 const taskStore = useTaskStore()
@@ -67,5 +68,13 @@ const handleClosePanel = () => {
     <div v-else class="text-center py-12 text-gray-500">
       タスクがありません。「+ 追加」ボタンから作成してください。
     </div>
+
+    <!-- タスク詳細パネル -->
+    <TaskPanel
+      v-if="selectedTask"
+      :task="selectedTask"
+      :open="showPanel"
+      @close="handleClosePanel"
+    />
   </div>
 </template>
