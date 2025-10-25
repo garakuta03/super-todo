@@ -5,6 +5,7 @@ export interface UserProfile {
   email: string
   photoURL?: string
   isInitialized: boolean  // 初期化済みフラグ
+  defaultListId?: string  // デフォルトリストID（ログイン時に自動選択）
   createdAt: Date
   updatedAt: Date
 }

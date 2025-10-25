@@ -141,9 +141,6 @@ export const useListStore = defineStore('list', () => {
     currentListId.value = id
   }
 
-  // 初期化 - Firestoreリスナーをセットアップ
-  setupFirestoreListener()
-
   return {
     lists,
     currentListId,
@@ -154,6 +151,7 @@ export const useListStore = defineStore('list', () => {
     createList,
     updateList,
     deleteList,
-    setCurrentList
+    setCurrentList,
+    setupFirestoreListener
   }
 })

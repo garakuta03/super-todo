@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useListStore } from '@/stores/listStore'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
-import { LogOut } from 'lucide-vue-next'
+import { LogOut, Settings } from 'lucide-vue-next'
+import UserSettingsDialog from '@/components/settings/UserSettingsDialog.vue'
 
 const listStore = useListStore()
 const authStore = useAuthStore()
@@ -11,11 +12,17 @@ const emit = defineEmits<{
   openCreateModal: []
 }>()
 
+const isSettingsOpen = ref(false)
+
 const userInitial = computed(() => {
   return authStore.user?.displayName?.charAt(0).toUpperCase() ||
          authStore.user?.email?.charAt(0).toUpperCase() ||
          'U'
 })
+
+const openSettings = () => {
+  isSettingsOpen.value = true
+}
 
 const handleSignOut = async () => {
   try {
@@ -54,6 +61,16 @@ const handleSignOut = async () => {
           + 追加
         </Button>
 
+        <!-- 設定ボタン -->
+        <Button
+          @click="openSettings"
+          variant="ghost"
+          size="sm"
+          title="設定"
+        >
+          <Settings :size="18" />
+        </Button>
+
         <!-- ログアウトボタン -->
         <Button
           @click="handleSignOut"
@@ -65,5 +82,11 @@ const handleSignOut = async () => {
         </Button>
       </div>
     </div>
+
+    <!-- 設定ダイアログ -->
+    <UserSettingsDialog
+      :open="isSettingsOpen"
+      @close="isSettingsOpen = false"
+    />
   </header>
 </template>

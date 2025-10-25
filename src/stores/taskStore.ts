@@ -136,9 +136,6 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  // 初期化 - Firestoreリスナーをセットアップ
-  setupFirestoreListener()
-
   return {
     tasks,
     isLoading,
@@ -148,6 +145,7 @@ export const useTaskStore = defineStore('task', () => {
     updateTask,
     deleteTask,
     toggleTask,
-    reorderTasks
+    reorderTasks,
+    setupFirestoreListener
   }
 })

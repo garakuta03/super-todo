@@ -141,9 +141,6 @@ export const useProjectStore = defineStore('project', () => {
     currentProjectId.value = id
   }
 
-  // 初期化 - Firestoreリスナーをセットアップ
-  setupFirestoreListener()
-
   return {
     projects,
     currentProjectId,
@@ -154,6 +151,7 @@ export const useProjectStore = defineStore('project', () => {
     createProject,
     updateProject,
     deleteProject,
-    setCurrentProject
+    setCurrentProject,
+    setupFirestoreListener
   }
 })

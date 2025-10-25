@@ -8,9 +8,12 @@ import {
 } from 'firebase/auth'
 import { auth, googleProvider, logError } from '@/lib/firebase'
 import { isUserInitialized } from '@/lib/initializeUser'
+import { usersApi } from '@/lib/firestore'
+import type { UserProfile } from '@/lib/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
+  const userProfile = ref<UserProfile | null>(null)
   const loading = ref(true)
   const needsSetup = ref(false)
   const checkingSetup = ref(false)
@@ -28,6 +31,11 @@ export const useAuthStore = defineStore('auth', () => {
         try {
           const initialized = await isUserInitialized(firebaseUser.uid)
           needsSetup.value = !initialized
+
+          // ユーザープロファイルを読み込む
+          if (initialized) {
+            userProfile.value = await usersApi.get(firebaseUser.uid)
+          }
         } catch (error) {
           console.error('Failed to check user setup:', error)
           needsSetup.value = false
@@ -36,6 +44,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
       } else {
         needsSetup.value = false
+        userProfile.value = null
       }
 
       loading.value = false
@@ -67,6 +76,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await firebaseSignOut(auth)
       user.value = null
+      userProfile.value = null
     } catch (error) {
       console.error('Sign-out error:', error)
       if (error instanceof Error) {
@@ -76,8 +86,25 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // ユーザープロファイルを更新
+  const updateUserProfile = async (updates: Partial<UserProfile>) => {
+    if (!user.value) return
+
+    try {
+      await usersApi.update(user.value.uid, updates)
+      // ローカル状態も更新
+      if (userProfile.value) {
+        userProfile.value = { ...userProfile.value, ...updates, updatedAt: new Date() }
+      }
+    } catch (error) {
+      console.error('Failed to update user profile:', error)
+      throw error
+    }
+  }
+
   return {
     user,
+    userProfile,
     loading,
     needsSetup,
     checkingSetup,
@@ -85,6 +112,7 @@ export const useAuthStore = defineStore('auth', () => {
     initAuth,
     signInWithGoogle,
     signOut,
-    completeSetup
+    completeSetup,
+    updateUserProfile
   }
 })

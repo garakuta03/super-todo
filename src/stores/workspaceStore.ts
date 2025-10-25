@@ -113,9 +113,6 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     currentWorkspaceId.value = id
   }
 
-  // 初期化 - Firestoreリスナーをセットアップ
-  setupFirestoreListener()
-
   return {
     workspaces,
     currentWorkspaceId,
@@ -125,6 +122,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,
-    setCurrentWorkspace
+    setCurrentWorkspace,
+    setupFirestoreListener
   }
 })

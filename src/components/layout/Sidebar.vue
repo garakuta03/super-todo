@@ -6,6 +6,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { useListStore } from '@/stores/listStore'
 import WorkspaceEditDialog from '@/components/workspace/WorkspaceEditDialog.vue'
 import ProjectEditDialog from '@/components/project/ProjectEditDialog.vue'
+import ListEditDialog from '@/components/list/ListEditDialog.vue'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue'
 import type { Workspace, Project, List } from '@/lib/types'
 
@@ -16,8 +17,10 @@ const listStore = useListStore()
 // 編集ダイアログの状態
 const isWorkspaceEditOpen = ref(false)
 const isProjectEditOpen = ref(false)
+const isListEditOpen = ref(false)
 const editingWorkspace = ref<Workspace | null>(null)
 const editingProject = ref<Project | null>(null)
+const editingList = ref<List | null>(null)
 
 // 削除確認ダイアログの状態
 const isDeleteConfirmOpen = ref(false)
@@ -167,6 +170,32 @@ const deleteProjectFromDialog = () => {
   if (!editingProject.value) return
   openDeleteConfirm('project', editingProject.value)
 }
+
+// リスト編集を開く
+const openListEdit = (list: List) => {
+  editingList.value = list
+  isListEditOpen.value = true
+}
+
+// リスト編集を保存
+const saveListEdit = async (data: { name: string; icon?: string; color?: string }) => {
+  if (!editingList.value) return
+
+  try {
+    await listStore.updateList(editingList.value.id, data)
+    isListEditOpen.value = false
+    editingList.value = null
+  } catch (error) {
+    console.error('Failed to update list:', error)
+    alert('リストの更新に失敗しました')
+  }
+}
+
+// リスト削除（編集ダイアログから）
+const deleteListFromDialog = () => {
+  if (!editingList.value) return
+  openDeleteConfirm('list', editingList.value)
+}
 </script>
 
 <template>
@@ -288,13 +317,22 @@ const deleteProjectFromDialog = () => {
                   }"
                 >{{ list.name }}</span>
               </div>
-              <button
-                @click.stop="openDeleteConfirm('list', list)"
-                class="p-0.5 opacity-0 group-hover:opacity-100 hover:bg-gray-200 rounded transition-all flex-shrink-0"
-                title="リストを削除"
-              >
-                <Trash2 :size="12" class="text-red-600" />
-              </button>
+              <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                <button
+                  @click.stop="openListEdit(list)"
+                  class="p-0.5 hover:bg-gray-200 rounded"
+                  title="リストを編集"
+                >
+                  <Settings :size="12" class="text-gray-600" />
+                </button>
+                <button
+                  @click.stop="openDeleteConfirm('list', list)"
+                  class="p-0.5 hover:bg-gray-200 rounded"
+                  title="リストを削除"
+                >
+                  <Trash2 :size="12" class="text-red-600" />
+                </button>
+              </div>
             </button>
           </div>
         </div>
@@ -315,6 +353,13 @@ const deleteProjectFromDialog = () => {
       @close="isProjectEditOpen = false"
       @save="saveProjectEdit"
       @delete="deleteProjectFromDialog"
+    />
+    <ListEditDialog
+      :open="isListEditOpen"
+      :list="editingList"
+      @close="isListEditOpen = false"
+      @save="saveListEdit"
+      @delete="deleteListFromDialog"
     />
 
     <!-- 削除確認ダイアログ -->
