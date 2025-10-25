@@ -38,7 +38,7 @@ watch(() => props.open, (newValue) => {
   }
 })
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   // 入力検証
   const validation = validateTaskTitle(title.value)
   if (!validation.valid) {
@@ -46,13 +46,21 @@ const handleSubmit = () => {
     return
   }
 
+  // リストがない場合は作成を試みる
   if (!listStore.currentListId) {
-    validationError.value = 'リストが選択されていません'
-    return
+    console.log('No current list, creating default list...')
+    try {
+      const defaultList = await listStore.createList({ name: '最初のタスクリスト', order: 0 })
+      listStore.setCurrentList(defaultList.id)
+    } catch (error) {
+      console.error('Failed to create default list:', error)
+      validationError.value = 'リストの作成に失敗しました'
+      return
+    }
   }
 
   try {
-    taskStore.createTask({
+    await taskStore.createTask({
       title: title.value.trim(),
       status: 'TODO',
       completed: false,
