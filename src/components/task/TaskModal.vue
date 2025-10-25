@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useTaskStore } from '@/stores/taskStore'
 import { useListStore } from '@/stores/listStore'
+import { useProjectStore } from '@/stores/projectStore'
 import { validateTaskTitle } from '@/lib/validation'
 import {
   Dialog,
@@ -49,8 +50,19 @@ const handleSubmit = async () => {
   // リストがない場合は作成を試みる
   if (!listStore.currentListId) {
     console.log('No current list, creating default list...')
+    // プロジェクトIDが必要
+    const projectStore = useProjectStore()
+    if (!projectStore.currentProjectId) {
+      validationError.value = 'プロジェクトが選択されていません'
+      return
+    }
+
     try {
-      const defaultList = await listStore.createList({ name: '最初のタスクリスト', order: 0 })
+      const defaultList = await listStore.createList({
+        name: '最初のタスクリスト',
+        projectId: projectStore.currentProjectId,
+        order: 0
+      })
       listStore.setCurrentList(defaultList.id)
     } catch (error) {
       console.error('Failed to create default list:', error)

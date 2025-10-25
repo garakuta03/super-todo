@@ -7,19 +7,44 @@ import {
   onAuthStateChanged
 } from 'firebase/auth'
 import { auth, googleProvider, logError } from '@/lib/firebase'
+import { isUserInitialized } from '@/lib/initializeUser'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(true)
+  const needsSetup = ref(false)
+  const checkingSetup = ref(false)
 
   const isAuthenticated = computed(() => user.value !== null)
 
   // 認証状態の監視
   const initAuth = () => {
-    onAuthStateChanged(auth, (firebaseUser) => {
+    onAuthStateChanged(auth, async (firebaseUser) => {
       user.value = firebaseUser
+
+      if (firebaseUser) {
+        // ユーザーが認証済みの場合、初期化済みかチェック
+        checkingSetup.value = true
+        try {
+          const initialized = await isUserInitialized(firebaseUser.uid)
+          needsSetup.value = !initialized
+        } catch (error) {
+          console.error('Failed to check user setup:', error)
+          needsSetup.value = false
+        } finally {
+          checkingSetup.value = false
+        }
+      } else {
+        needsSetup.value = false
+      }
+
       loading.value = false
     })
+  }
+
+  // セットアップ完了を設定
+  const completeSetup = () => {
+    needsSetup.value = false
   }
 
   // Googleログイン
@@ -54,9 +79,12 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     loading,
+    needsSetup,
+    checkingSetup,
     isAuthenticated,
     initAuth,
     signInWithGoogle,
-    signOut
+    signOut,
+    completeSetup
   }
 })

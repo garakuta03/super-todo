@@ -11,23 +11,43 @@
 - **Pinia** (状態管理)
 - **Radix Vue** (UIコンポーネント)
 - **Firebase** (Authentication / Firestore / Analytics / Hosting)
-- **LocalStorage** (オフラインデータ永続化)
 
 ## 実装済み機能
 
 ### 認証機能
 ✅ Google認証によるログイン/ログアウト
 ✅ 認証状態の管理と表示
+✅ 新規ユーザーの自動初期化
+✅ ユーザープロファイル管理
+
+### 階層構造によるタスク管理
+✅ **4階層の組織構造**
+  - ワークスペース（組織レベル）
+  - プロジェクト
+  - TODOリスト
+  - TODO（タスク）
+✅ 左サイドバーナビゲーション
+✅ ワークスペース・プロジェクト・リストの切り替え
 
 ### タスク管理
 ✅ タスクの作成・編集・削除
 ✅ タスクの完了/未完了の切り替え
 ✅ タスク詳細パネル（説明の編集、ステータス変更）
+✅ リスト別タスク管理
 
 ### データ管理
 ✅ Firestoreによるクラウド同期
-✅ LocalStorageによるオフライン対応
-✅ サンプルデータの自動生成
+✅ リアルタイムデータ更新
+✅ ユーザーごとのデータ分離
+✅ セキュアなアクセス制御（Firestore Rules）
+
+### オンボーディング
+✅ 新規ユーザーセットアップ画面
+✅ 初回サインアップ時の自動データ生成
+  - ユーザープロファイル
+  - デフォルトワークスペース
+  - デフォルトプロジェクト
+  - デフォルトTODOリスト
 
 ### 監視・分析
 ✅ Firebase Analyticsによるエラートラッキング
@@ -136,10 +156,12 @@ firebase deploy --only hosting
 src/
 ├── components/
 │   ├── auth/            # 認証関連コンポーネント
-│   │   └── LoginPage.vue
+│   │   ├── LoginPage.vue
+│   │   └── SetupPage.vue    # 新規ユーザーセットアップ画面
 │   ├── layout/          # レイアウトコンポーネント
 │   │   ├── MainLayout.vue
-│   │   └── AppHeader.vue
+│   │   ├── AppHeader.vue
+│   │   └── Sidebar.vue      # 左サイドバーナビゲーション
 │   ├── task/            # タスク関連コンポーネント
 │   │   ├── TaskRow.vue
 │   │   ├── TaskList.vue
@@ -155,14 +177,17 @@ src/
 │       └── textarea/
 ├── stores/              # Piniaストア
 │   ├── authStore.ts     # 認証状態管理
-│   ├── taskStore.ts     # タスク状態管理
-│   └── listStore.ts     # リスト状態管理
+│   ├── workspaceStore.ts # ワークスペース管理
+│   ├── projectStore.ts  # プロジェクト管理
+│   ├── listStore.ts     # リスト状態管理
+│   └── taskStore.ts     # タスク状態管理
 ├── lib/                 # ユーティリティ
-│   ├── types.ts         # 型定義
+│   ├── types.ts         # 型定義（Workspace/Project/List/Task/UserProfile）
 │   ├── utils.ts         # ユーティリティ関数
-│   ├── seed.ts          # サンプルデータ
+│   ├── validation.ts    # 入力バリデーション
 │   ├── firebase.ts      # Firebase初期化・Analytics
-│   └── firestore.ts     # Firestore API
+│   ├── firestore.ts     # Firestore API
+│   └── initializeUser.ts # ユーザー初期化サービス
 ├── assets/              # スタイル
 │   └── main.css
 ├── App.vue
@@ -171,39 +196,45 @@ src/
 
 ## 基本的な使い方
 
-### 1. ログイン
+### 1. 初回ログイン（新規ユーザー）
 
-アプリケーションにアクセスすると、ログイン画面が表示されます。
-「Googleでサインイン」ボタンをクリックしてログインしてください。
+1. アプリケーションにアクセス
+2. 「Googleでサインイン」ボタンをクリック
+3. セットアップ画面で表示名を入力
+4. 「始める」ボタンをクリック
+5. 自動的に以下が作成されます：
+   - ユーザープロファイル
+   - デフォルトワークスペース（「〇〇のワークスペース」）
+   - デフォルトプロジェクト（「最初のプロジェクト」）
+   - デフォルトTODOリスト（「ToDoリスト」）
 
-### 2. タスクを作成
+### 2. ワークスペース・プロジェクトの管理
+
+1. 左サイドバーでワークスペースを切り替え
+2. プロジェクト名の隣の「+」ボタンで新しいプロジェクトを作成
+3. プロジェクトをクリックして選択
+4. プロジェクト内のリストが表示されます
+
+### 3. タスクを作成
 
 1. 右上の「+ 追加」ボタンをクリック
 2. タスク名を入力
 3. 「追加する」ボタンをクリック
+4. タスクは現在選択中のリストに追加されます
 
-### 3. タスクを編集
+### 4. タスクを編集
 
 1. タスクをクリックして詳細パネルを開く
 2. 説明やステータスを編集
 3. 自動保存されます
 
-### 4. タスクを完了
+### 5. タスクを完了
 
 タスク左側のチェックボックスをクリック
 
-### 5. ログアウト
+### 6. ログアウト
 
 右上のログアウトアイコンをクリック
-
-## データのリセット
-
-ブラウザのコンソールで以下を実行：
-
-```javascript
-import { resetData } from './src/lib/seed'
-resetData()
-```
 
 ## Gitコミット履歴
 
@@ -244,17 +275,19 @@ git log --oneline
 |------|------|------|
 | プロジェクト初期化 | ✅ | Vue 3 + TypeScript + Vite |
 | Tailwind CSS設定 | ✅ | v3.4（安定版） |
-| 型定義 | ✅ | Task / List / User |
-| Piniaストア | ✅ | authStore / taskStore / listStore |
-| LocalStorage永続化 | ✅ | 自動保存 |
-| 基本レイアウト | ✅ | MainLayout / AppHeader |
+| 型定義 | ✅ | Workspace / Project / List / Task / UserProfile |
+| Piniaストア | ✅ | authStore / workspaceStore / projectStore / listStore / taskStore |
+| 階層構造データモデル | ✅ | Workspace → Project → List → Task |
+| 左サイドバーナビゲーション | ✅ | 階層表示・切り替え |
+| 基本レイアウト | ✅ | MainLayout / AppHeader / Sidebar |
 | タスク一覧表示 | ✅ | TaskList / TaskRow |
 | タスク作成モーダル | ✅ | Dialog使用 |
 | タスク詳細パネル | ✅ | Sheet使用（右側スライド） |
 | チェックボックス | ✅ | 完了/未完了切り替え |
-| サンプルデータ | ✅ | 初回起動時に自動生成 |
+| 新規ユーザー初期化 | ✅ | セットアップ画面・自動データ生成 |
 | Firebase Authentication | ✅ | Google認証 |
-| Firebase Firestore | ✅ | クラウド同期 |
+| Firebase Firestore | ✅ | クラウド同期・リアルタイム更新 |
+| Firestore セキュリティルール | ✅ | ユーザーベースのアクセス制御 |
 | Firebase Analytics | ✅ | エラートラッキング |
 | Firebase Hosting | ✅ | 本番デプロイ完了 |
 
@@ -267,18 +300,22 @@ git log --oneline
 - [ ] アニメーション効果の追加
 
 #### 機能の追加
-- [ ] 複数リストの管理
+- [ ] ワークスペース編集・削除機能
+- [ ] プロジェクト編集・削除機能
+- [ ] リスト編集・削除機能
 - [ ] タスクの並び替え（ドラッグ&ドロップ）
 - [ ] フィルター・検索機能
 - [ ] タグ機能
 - [ ] サブタスク機能
 - [ ] 期限リマインダー
+- [ ] ワークスペースへの招待機能
+- [ ] チーム共同作業機能
 
 #### セキュリティ・パフォーマンス
-- [ ] Firestore セキュリティルールの強化
 - [ ] コード分割による初期ロード時間の改善
 - [ ] 画像最適化
 - [ ] PWA対応（オフライン機能の強化）
+- [ ] インデックス最適化（Firestore）
 
 #### 開発体験
 - [ ] テストコードの追加
@@ -304,17 +341,15 @@ git log --oneline
    npm install
    ```
 
-### データをリセットしたい場合
-
-ブラウザのコンソールで:
-```javascript
-localStorage.clear()
-location.reload()
-```
-
 ### エラーログを確認したい場合
 
 Firebase Console → Analytics → イベント → `exception`イベントを確認
+
+### 新規ユーザーとしてテストしたい場合
+
+1. 別のGoogleアカウントでログイン
+2. または、Firebase Console → Authentication → Users から既存ユーザーを削除
+3. Firestore Consoleから該当ユーザーのデータ（users/workspaces/projects/lists/tasks）を削除
 
 ## デモ
 

@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted, watch } from 'vue'
 import { nanoid } from 'nanoid'
 import type { List } from '@/lib/types'
 import { listsApi } from '@/lib/firestore'
 import { useAuthStore } from '@/stores/authStore'
+import { useProjectStore } from '@/stores/projectStore'
 
 export const useListStore = defineStore('list', () => {
   // State
@@ -19,8 +20,18 @@ export const useListStore = defineStore('list', () => {
     currentListId.value ? lists.value[currentListId.value] : null
   )
 
+  // 現在のプロジェクトに属するリスト
+  const currentProjectLists = computed(() => {
+    const projectStore = useProjectStore()
+    if (!projectStore.currentProjectId) return []
+
+    return allLists.value.filter(
+      list => list.projectId === projectStore.currentProjectId
+    )
+  })
+
   // Actions
-  const createList = async (listData: Omit<List, 'id' | 'userId' | 'createdAt'>) => {
+  const createList = async (listData: Omit<List, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     const authStore = useAuthStore()
 
     // ユーザーが認証されていない場合はエラー
@@ -31,8 +42,9 @@ export const useListStore = defineStore('list', () => {
     const list: List = {
       ...listData,
       id: nanoid(),
-      userId: authStore.user.uid,  // 現在のユーザーIDを設定
-      createdAt: new Date()
+      userId: authStore.user.uid,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
 
     lists.value[list.id] = list
@@ -55,23 +67,33 @@ export const useListStore = defineStore('list', () => {
         acc[list.id] = list
         return acc
       }, {} as Record<string, List>)
-
-      // currentListIdが設定されていない、または削除された場合
-      if (!currentListId.value || !lists.value[currentListId.value]) {
-        const firstListId = Object.keys(lists.value)[0]
-        if (firstListId) {
-          currentListId.value = firstListId
-        } else {
-          // リストがない場合は新規作成
-          createList({ name: '最初のタスクリスト', order: 0 }).then(list => {
-            currentListId.value = list.id
-          }).catch(error => {
-            console.error('Failed to create default list:', error)
-          })
-        }
-      }
     })
   }
+
+  // 現在のプロジェクトが変更されたとき、最初のリストを選択
+  const projectStore = useProjectStore()
+  watch(
+    () => projectStore.currentProjectId,
+    (newProjectId) => {
+      if (!newProjectId) {
+        currentListId.value = ''
+        return
+      }
+
+      // 現在のプロジェクトに属するリストを取得
+      const projectLists = allLists.value.filter(
+        l => l.projectId === newProjectId
+      )
+
+      if (projectLists.length > 0) {
+        // リストがある場合は最初のものを選択
+        currentListId.value = projectLists[0].id
+      } else {
+        currentListId.value = ''
+      }
+    },
+    { immediate: true }
+  )
 
   // クリーンアップ
   onUnmounted(() => {
@@ -121,6 +143,7 @@ export const useListStore = defineStore('list', () => {
     isLoading,
     allLists,
     currentList,
+    currentProjectLists,
     createList,
     updateList,
     deleteList,

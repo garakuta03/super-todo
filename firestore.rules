@@ -17,41 +17,52 @@ service cloud.firestore {
       return request.resource.data.userId == request.auth.uid;
     }
 
-    // リストのセキュリティルール
-    match /lists/{listId} {
-      // 読み取り: 認証済みユーザーのみ、自分のリストのみ
+    // ユーザープロファイルのセキュリティルール
+    match /users/{userId} {
+      // 自分のプロファイルのみ読み書き可能
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if false; // プロファイルの削除は不可
+    }
+
+    // ワークスペースのセキュリティルール
+    match /workspaces/{workspaceId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-
-      // 作成: 認証済みユーザーのみ、userIdが自分のIDであること
-      allow create: if isAuthenticated()
-                    && isValidNewDocument()
-                    && request.resource.data.keys().hasAll(['name', 'userId', 'order', 'createdAt']);
-
-      // 更新: 認証済みユーザーのみ、自分のリストのみ、userIdは変更不可
+      allow create: if isAuthenticated() && isValidNewDocument();
       allow update: if isAuthenticated()
                     && isOwner(resource.data.userId)
                     && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
 
-      // 削除: 認証済みユーザーのみ、自分のリストのみ
+    // プロジェクトのセキュリティルール
+    match /projects/{projectId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidNewDocument();
+      allow update: if isAuthenticated()
+                    && isOwner(resource.data.userId)
+                    && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // リストのセキュリティルール
+    match /lists/{listId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidNewDocument();
+      allow update: if isAuthenticated()
+                    && isOwner(resource.data.userId)
+                    && request.resource.data.userId == resource.data.userId;
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
     // タスクのセキュリティルール
     match /tasks/{taskId} {
-      // 読み取り: 認証済みユーザーのみ、自分のタスクのみ
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-
-      // 作成: 認証済みユーザーのみ、userIdが自分のIDであること
-      allow create: if isAuthenticated()
-                    && isValidNewDocument()
-                    && request.resource.data.keys().hasAll(['title', 'userId', 'listId', 'status', 'completed', 'order', 'createdAt', 'updatedAt']);
-
-      // 更新: 認証済みユーザーのみ、自分のタスクのみ、userIdは変更不可
+      allow create: if isAuthenticated() && isValidNewDocument();
       allow update: if isAuthenticated()
                     && isOwner(resource.data.userId)
                     && request.resource.data.userId == resource.data.userId;
-
-      // 削除: 認証済みユーザーのみ、自分のタスクのみ
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
