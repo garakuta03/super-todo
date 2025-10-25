@@ -44,6 +44,7 @@ export interface List {
   color?: string
   icon?: string
   order: number
+  useStartDate?: boolean  // 開始日を使用するか（デフォルト: false）
   createdAt: Date
   updatedAt: Date
 }

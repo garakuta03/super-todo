@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
 import { useTaskStore } from '@/stores/taskStore'
+import { useListStore } from '@/stores/listStore'
 import type { Task } from '@/lib/types'
 import {
   Sheet,
@@ -26,11 +27,23 @@ const emit = defineEmits<{
 }>()
 
 const taskStore = useTaskStore()
+const listStore = useListStore()
+
 const title = ref(props.task.title)
 const description = ref(props.task.description || '')
 const selectedStatus = ref(props.task.status)
 const startDate = ref<Date | null>(props.task.startDate || null)
 const dueDate = ref<Date | null>(props.task.dueDate || null)
+
+// 現在のリストの設定を取得
+const currentList = computed(() => {
+  return listStore.lists[props.task.listId]
+})
+
+// 開始日を使用するかどうか
+const useStartDate = computed(() => {
+  return currentList.value?.useStartDate || false
+})
 
 watch(() => props.task, (newTask) => {
   title.value = newTask.title
@@ -117,8 +130,9 @@ const handleDelete = () => {
             </select>
           </div>
 
-          <!-- 開始日 -->
+          <!-- 開始日（リスト設定で有効な場合のみ表示） -->
           <CalendarDatePicker
+            v-if="useStartDate"
             :model-value="startDate"
             label="開始日"
             @update:model-value="handleUpdateStartDate"

@@ -178,7 +178,7 @@ const openListEdit = (list: List) => {
 }
 
 // リスト編集を保存
-const saveListEdit = async (data: { name: string; icon?: string; color?: string }) => {
+const saveListEdit = async (data: { name: string; icon?: string; color?: string; useStartDate?: boolean }) => {
   if (!editingList.value) return
 
   try {

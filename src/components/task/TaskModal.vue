@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useTaskStore } from '@/stores/taskStore'
 import { useListStore } from '@/stores/listStore'
 import { useProjectStore } from '@/stores/projectStore'
@@ -32,6 +32,17 @@ const startDate = ref<Date | null>(null)
 const dueDate = ref<Date | null>(null)
 const continueCreating = ref(false)
 const validationError = ref<string>('')
+
+// 現在選択中のリストの設定を取得
+const currentList = computed(() => {
+  const selectedListId = listStore.currentListId
+  return selectedListId ? listStore.lists[selectedListId] : null
+})
+
+// 開始日を使用するかどうか
+const useStartDate = computed(() => {
+  return currentList.value?.useStartDate || false
+})
 
 // モーダルが閉じる時にリセット
 watch(() => props.open, (newValue) => {
@@ -132,8 +143,9 @@ const handleKeydown = (e: KeyboardEvent) => {
           </p>
         </div>
 
-        <!-- 開始日 -->
+        <!-- 開始日（リスト設定で有効な場合のみ表示） -->
         <CalendarDatePicker
+          v-if="useStartDate"
           v-model="startDate"
           label="開始日（任意）"
         />

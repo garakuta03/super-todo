@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface Props {
   open: boolean
@@ -17,7 +18,7 @@ interface Props {
 
 interface Emits {
   (e: 'close'): void
-  (e: 'save', data: { name: string; icon?: string; color?: string }): void
+  (e: 'save', data: { name: string; icon?: string; color?: string; useStartDate?: boolean }): void
   (e: 'delete'): void
 }
 
@@ -28,6 +29,7 @@ const emit = defineEmits<Emits>()
 const name = ref('')
 const icon = ref('')
 const color = ref('')
+const useStartDate = ref(false)
 
 // リストが変更されたらフォームに反映
 watch(() => props.list, (list) => {
@@ -35,10 +37,12 @@ watch(() => props.list, (list) => {
     name.value = list.name
     icon.value = list.icon || ''
     color.value = list.color || ''
+    useStartDate.value = list.useStartDate || false
   } else {
     name.value = ''
     icon.value = ''
     color.value = ''
+    useStartDate.value = false
   }
 }, { immediate: true })
 
@@ -52,6 +56,7 @@ const handleSave = () => {
     name: name.value.trim(),
     icon: icon.value || undefined,
     color: color.value || undefined,
+    useStartDate: useStartDate.value,
   })
 }
 
@@ -110,6 +115,23 @@ const handleDelete = () => {
           </div>
           <p class="text-xs text-gray-500">カラーコードを入力してください（例: #3B82F6）</p>
         </div>
+
+        <!-- 開始日を使用する -->
+        <div class="flex items-center gap-2 pt-2 border-t">
+          <Checkbox
+            id="useStartDate"
+            v-model:checked="useStartDate"
+          />
+          <label
+            for="useStartDate"
+            class="text-sm font-medium cursor-pointer"
+          >
+            開始日を使用する
+          </label>
+        </div>
+        <p class="text-xs text-gray-500 -mt-2">
+          チェックを入れると、このリストのタスクで開始日を設定できるようになります
+        </p>
       </div>
 
       <div class="flex justify-between">
