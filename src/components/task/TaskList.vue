@@ -46,30 +46,30 @@ const handleClosePanel = () => {
 useSortable(taskListRef, sortableTasks, {
   animation: 150,
   handle: '.drag-handle',
+  draggable: '.task-row',
   ghostClass: 'opacity-50',
-  onStart: () => {
-    console.log('[TaskList] Drag started')
-  },
+  chosenClass: 'bg-blue-50',
+  dragClass: 'opacity-0',
   onEnd: async (event: any) => {
-    console.log('[TaskList] Drag end:', { oldIndex: event.oldIndex, newIndex: event.newIndex })
     const { oldIndex, newIndex } = event
     if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) {
-      console.log('[TaskList] No reorder needed')
       return
     }
 
-    // sortableTasksは自動的に並び替えられているので、そのIDリストを取得
-    const taskIds = sortableTasks.value.map(t => t.id)
-    console.log('[TaskList] New task order:', taskIds)
+    // 現在の表示順序のコピーを作成
+    const currentOrder = [...sortableTasks.value]
+
+    // 手動で並び替えを実行
+    const [movedTask] = currentOrder.splice(oldIndex, 1)
+    currentOrder.splice(newIndex, 0, movedTask)
+
+    const taskIds = currentOrder.map(t => t.id)
 
     // Firestoreに並び順を保存
     try {
       await taskStore.reorderTasks(taskIds)
-      console.log('[TaskList] Reorder successful')
     } catch (error) {
-      console.error('[TaskList] Failed to reorder tasks:', error)
-      // エラー時は元に戻す
-      sortableTasks.value = [...tasks.value]
+      console.error('Failed to reorder tasks:', error)
     }
   }
 })
@@ -97,7 +97,7 @@ useSortable(taskListRef, sortableTasks, {
     </div>
 
     <!-- タスク一覧 -->
-    <div v-if="sortableTasks.length > 0" ref="taskListRef">
+    <div ref="taskListRef">
       <TaskRow
         v-for="task in sortableTasks"
         :key="task.id"
@@ -108,7 +108,7 @@ useSortable(taskListRef, sortableTasks, {
     </div>
 
     <!-- 空の状態 -->
-    <div v-else class="text-center py-12 text-gray-500">
+    <div v-if="sortableTasks.length === 0" class="text-center py-12 text-gray-500">
       タスクがありません。「+ 追加」ボタンから作成してください。
     </div>
 

@@ -109,7 +109,8 @@ service cloud.firestore {
                     && (!('title' in request.resource.data) || isValidStringLength('title', 255))
                     && (!('description' in request.resource.data) || isValidStringLength('description', 5000))
                     && (!('status' in request.resource.data) || request.resource.data.status in ['TODO', 'IN_PROGRESS', 'DONE'])
-                    && (!('completed' in request.resource.data) || request.resource.data.completed is bool);
+                    && (!('completed' in request.resource.data) || request.resource.data.completed is bool)
+                    && (!('order' in request.resource.data) || request.resource.data.order is number);
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 

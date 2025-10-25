@@ -22,7 +22,8 @@ const formattedDate = computed(() =>
 
 <template>
   <div
-    class="grid grid-cols-[auto_auto_auto_1fr_auto_auto_auto_auto] gap-4 items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+    :data-id="task.id"
+    class="task-row grid grid-cols-[auto_auto_auto_1fr_auto_auto_auto_auto] gap-4 items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
     @click="emit('click', task)"
   >
     <!-- アバター -->
