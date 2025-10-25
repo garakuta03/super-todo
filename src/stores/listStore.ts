@@ -12,36 +12,6 @@ export const useListStore = defineStore('list', () => {
   const isLoading = ref(false)
   let unsubscribe: (() => void) | null = null
 
-  // Firestoreリアルタイムリスナーを設定
-  const setupFirestoreListener = () => {
-    unsubscribe = listsApi.subscribe((listArray) => {
-      lists.value = listArray.reduce((acc, list) => {
-        acc[list.id] = list
-        return acc
-      }, {} as Record<string, List>)
-
-      // currentListIdが設定されていない、または削除された場合
-      if (!currentListId.value || !lists.value[currentListId.value]) {
-        const firstListId = Object.keys(lists.value)[0]
-        if (firstListId) {
-          currentListId.value = firstListId
-        } else {
-          // リストがない場合は新規作成
-          createList({ name: '最初のタスクリスト', order: 0 }).then(list => {
-            currentListId.value = list.id
-          })
-        }
-      }
-    })
-  }
-
-  // クリーンアップ
-  onUnmounted(() => {
-    if (unsubscribe) {
-      unsubscribe()
-    }
-  })
-
   // Getters
   const allLists = computed(() => Object.values(lists.value))
 
@@ -77,6 +47,38 @@ export const useListStore = defineStore('list', () => {
 
     return list
   }
+
+  // Firestoreリアルタイムリスナーを設定
+  const setupFirestoreListener = () => {
+    unsubscribe = listsApi.subscribe((listArray) => {
+      lists.value = listArray.reduce((acc, list) => {
+        acc[list.id] = list
+        return acc
+      }, {} as Record<string, List>)
+
+      // currentListIdが設定されていない、または削除された場合
+      if (!currentListId.value || !lists.value[currentListId.value]) {
+        const firstListId = Object.keys(lists.value)[0]
+        if (firstListId) {
+          currentListId.value = firstListId
+        } else {
+          // リストがない場合は新規作成
+          createList({ name: '最初のタスクリスト', order: 0 }).then(list => {
+            currentListId.value = list.id
+          }).catch(error => {
+            console.error('Failed to create default list:', error)
+          })
+        }
+      }
+    })
+  }
+
+  // クリーンアップ
+  onUnmounted(() => {
+    if (unsubscribe) {
+      unsubscribe()
+    }
+  })
 
   const updateList = async (id: string, updates: Partial<List>) => {
     if (!lists.value[id]) return
