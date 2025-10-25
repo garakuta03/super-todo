@@ -1,6 +1,6 @@
-# Tone Clone POC - Vue.js版
+# Super TODO
 
-tone-task.comのUIを参考にしたシンプルなタスク管理ツールのPOC
+シンプルで使いやすいタスク管理アプリケーション
 
 ## 技術スタック
 
@@ -10,16 +10,29 @@ tone-task.comのUIを参考にしたシンプルなタスク管理ツールのPO
 - **Tailwind CSS**
 - **Pinia** (状態管理)
 - **Radix Vue** (UIコンポーネント)
-- **Firebase** (Firestore / Hosting)
+- **Firebase** (Authentication / Firestore / Analytics / Hosting)
 - **LocalStorage** (オフラインデータ永続化)
 
 ## 実装済み機能
 
+### 認証機能
+✅ Google認証によるログイン/ログアウト
+✅ 認証状態の管理と表示
+
+### タスク管理
 ✅ タスクの作成・編集・削除
 ✅ タスクの完了/未完了の切り替え
 ✅ タスク詳細パネル（説明の編集、ステータス変更）
-✅ LocalStorageによるデータ永続化
+
+### データ管理
+✅ Firestoreによるクラウド同期
+✅ LocalStorageによるオフライン対応
 ✅ サンプルデータの自動生成
+
+### 監視・分析
+✅ Firebase Analyticsによるエラートラッキング
+✅ グローバルエラーハンドラー
+✅ 認証エラーのロギング
 
 ## 開発開始
 
@@ -29,15 +42,18 @@ tone-task.comのUIを参考にしたシンプルなタスク管理ツールのPO
 npm install
 ```
 
-### 2. Firebase設定（オプション）
+### 2. Firebase設定（必須）
 
-Firestoreを使用する場合は、以下の手順でセットアップしてください：
+このアプリケーションはFirebaseを使用します。以下の手順でセットアップしてください：
 
 #### 2-1. Firebaseプロジェクトの作成
 
 1. [Firebase Console](https://console.firebase.google.com/) にアクセス
 2. 新しいプロジェクトを作成
-3. Firestoreを有効化（テストモードで開始可能）
+3. 以下の機能を有効化：
+   - **Authentication** → Google認証を有効化
+   - **Firestore Database** → テストモードで開始
+   - **Analytics** → エラートラッキング用
 
 #### 2-2. 環境変数の設定
 
@@ -48,8 +64,6 @@ cp .env.local.example .env.local
 `.env.local`を編集して、Firebase Consoleから取得した設定値を入力：
 
 ```env
-VITE_USE_FIRESTORE=true
-
 VITE_FIREBASE_API_KEY=your-api-key
 VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your-project-id
@@ -58,7 +72,7 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 VITE_FIREBASE_APP_ID=your-app-id
 ```
 
-**注意**: `VITE_USE_FIRESTORE=false`に設定すると、LocalStorageが使用されます。
+Firebase Consoleの「プロジェクトの設定」から上記の値を取得して設定してください。
 
 ### 3. 開発サーバーの起動
 
@@ -121,6 +135,8 @@ firebase deploy --only hosting
 ```
 src/
 ├── components/
+│   ├── auth/            # 認証関連コンポーネント
+│   │   └── LoginPage.vue
 │   ├── layout/          # レイアウトコンポーネント
 │   │   ├── MainLayout.vue
 │   │   └── AppHeader.vue
@@ -138,37 +154,47 @@ src/
 │       ├── sheet/
 │       └── textarea/
 ├── stores/              # Piniaストア
-│   ├── taskStore.ts
-│   └── listStore.ts
+│   ├── authStore.ts     # 認証状態管理
+│   ├── taskStore.ts     # タスク状態管理
+│   └── listStore.ts     # リスト状態管理
 ├── lib/                 # ユーティリティ
-│   ├── types.ts
-│   ├── utils.ts
-│   ├── seed.ts
-│   ├── firebase.ts      # Firebase初期化
+│   ├── types.ts         # 型定義
+│   ├── utils.ts         # ユーティリティ関数
+│   ├── seed.ts          # サンプルデータ
+│   ├── firebase.ts      # Firebase初期化・Analytics
 │   └── firestore.ts     # Firestore API
 ├── assets/              # スタイル
 │   └── main.css
 ├── App.vue
-└── main.ts
+└── main.ts              # エントリーポイント・エラーハンドラー
 ```
 
 ## 基本的な使い方
 
-### タスクを作成
+### 1. ログイン
+
+アプリケーションにアクセスすると、ログイン画面が表示されます。
+「Googleでサインイン」ボタンをクリックしてログインしてください。
+
+### 2. タスクを作成
 
 1. 右上の「+ 追加」ボタンをクリック
 2. タスク名を入力
 3. 「追加する」ボタンをクリック
 
-### タスクを編集
+### 3. タスクを編集
 
 1. タスクをクリックして詳細パネルを開く
 2. 説明やステータスを編集
 3. 自動保存されます
 
-### タスクを完了
+### 4. タスクを完了
 
 タスク左側のチェックボックスをクリック
+
+### 5. ログアウト
+
+右上のログアウトアイコンをクリック
 
 ## データのリセット
 
@@ -187,20 +213,28 @@ git log --oneline
 
 全てのコミットメッセージは日本語で記載されています。
 
-## 実装しなかった機能（POCでは不要）
+## Firebase機能の詳細
 
-- サイドバー（リスト切り替え）
-- フィルター機能
-- 検索機能
-- ドラッグ&ドロップ
-- 担当者機能
-- タグ機能
-- サブタスク機能
-- リッチテキストエディタ
-- テンプレート機能
-- キーボードショートカット
-- 認証機能
-- テストコード
+### Authentication（認証）
+- Googleアカウントでのソーシャルログイン
+- 認証状態の永続化
+- ユーザー情報の表示（名前、アバター）
+
+### Firestore（データベース）
+- タスクデータのクラウド同期
+- リアルタイムデータ更新
+- オフライン対応
+
+### Analytics（分析）
+- アプリケーションエラーの自動収集
+- Vue エラーハンドラー統合
+- Promise未処理エラーのトラッキング
+- カスタムエラーイベントのログ記録
+
+### Hosting（ホスティング）
+- 静的サイトホスティング
+- 自動HTTPSサポート
+- CDN配信
 
 ## 実装状況
 
@@ -210,8 +244,8 @@ git log --oneline
 |------|------|------|
 | プロジェクト初期化 | ✅ | Vue 3 + TypeScript + Vite |
 | Tailwind CSS設定 | ✅ | v3.4（安定版） |
-| 型定義 | ✅ | Task / List |
-| Piniaストア | ✅ | taskStore / listStore |
+| 型定義 | ✅ | Task / List / User |
+| Piniaストア | ✅ | authStore / taskStore / listStore |
 | LocalStorage永続化 | ✅ | 自動保存 |
 | 基本レイアウト | ✅ | MainLayout / AppHeader |
 | タスク一覧表示 | ✅ | TaskList / TaskRow |
@@ -219,41 +253,46 @@ git log --oneline
 | タスク詳細パネル | ✅ | Sheet使用（右側スライド） |
 | チェックボックス | ✅ | 完了/未完了切り替え |
 | サンプルデータ | ✅ | 初回起動時に自動生成 |
-| Firebase/Firestore統合 | ✅ | 環境変数で切り替え可能 |
-| Firebase Hosting設定 | ✅ | デプロイ準備完了 |
+| Firebase Authentication | ✅ | Google認証 |
+| Firebase Firestore | ✅ | クラウド同期 |
+| Firebase Analytics | ✅ | エラートラッキング |
+| Firebase Hosting | ✅ | 本番デプロイ完了 |
 
 ### 📋 改善候補・今後のタスク
 
-以下は洗い出し後に検討する項目です：
-
 #### UIの改善
-- [ ] アバター表示の調整
-- [ ] TODOバッジのスタイル調整
-- [ ] ホバー効果の改善
-- [ ] レスポンシブデザインの調整
-- [ ] ローディング状態の表示
+- [ ] レスポンシブデザインの最適化
+- [ ] ダークモード対応
+- [ ] ローディング状態の改善
+- [ ] アニメーション効果の追加
 
 #### 機能の追加
-- [ ] タスクの削除機能
+- [ ] 複数リストの管理
 - [ ] タスクの並び替え（ドラッグ&ドロップ）
-- [ ] 期限の設定UI
-- [ ] ステータスの視覚的な表示改善
-- [ ] フィルター機能（基本版）
+- [ ] フィルター・検索機能
+- [ ] タグ機能
+- [ ] サブタスク機能
+- [ ] 期限リマインダー
 
-#### コードの改善
-- [ ] TypeScriptの型エラー修正
-- [ ] コンポーネントの分割・整理
-- [ ] エラーハンドリングの追加
-- [ ] パフォーマンスの最適化
+#### セキュリティ・パフォーマンス
+- [ ] Firestore セキュリティルールの強化
+- [ ] コード分割による初期ロード時間の改善
+- [ ] 画像最適化
+- [ ] PWA対応（オフライン機能の強化）
+
+#### 開発体験
+- [ ] テストコードの追加
+- [ ] CI/CD パイプラインの構築
+- [ ] エラーバウンダリの実装
 - [ ] アクセシビリティの改善
 
-#### その他
-- [ ] ダークモード対応
-- [ ] キーボードショートカット
-- [ ] データのエクスポート/インポート
-- [ ] ブラウザ間のデータ同期
-
 ## トラブルシューティング
+
+### 認証エラーが発生する場合
+
+1. Firebase Consoleで認証プロバイダーが有効になっているか確認
+2. `.env.local`の設定値が正しいか確認
+3. ブラウザのサードパーティCookieが有効になっているか確認
 
 ### Tailwind CSSが適用されない場合
 
@@ -272,6 +311,14 @@ git log --oneline
 localStorage.clear()
 location.reload()
 ```
+
+### エラーログを確認したい場合
+
+Firebase Console → Analytics → イベント → `exception`イベントを確認
+
+## デモ
+
+本番環境: https://todo-3d4c8.web.app
 
 ## ライセンス
 

@@ -1,11 +1,29 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useListStore } from '@/stores/listStore'
+import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
+import { LogOut } from 'lucide-vue-next'
 
 const listStore = useListStore()
+const authStore = useAuthStore()
 const emit = defineEmits<{
   openCreateModal: []
 }>()
+
+const userInitial = computed(() => {
+  return authStore.user?.displayName?.charAt(0).toUpperCase() ||
+         authStore.user?.email?.charAt(0).toUpperCase() ||
+         'U'
+})
+
+const handleSignOut = async () => {
+  try {
+    await authStore.signOut()
+  } catch (error) {
+    console.error('Sign out error:', error)
+  }
+}
 </script>
 
 <template>
@@ -18,9 +36,14 @@ const emit = defineEmits<{
 
       <!-- 右側のアクション -->
       <div class="flex items-center gap-3">
-        <!-- アバター -->
-        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-semibold text-sm">
-          S
+        <!-- ユーザー情報 -->
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-semibold text-sm">
+            {{ userInitial }}
+          </div>
+          <span v-if="authStore.user?.displayName" class="text-sm text-gray-700">
+            {{ authStore.user.displayName }}
+          </span>
         </div>
 
         <!-- 追加ボタン -->
@@ -34,6 +57,16 @@ const emit = defineEmits<{
         <!-- リストボタン -->
         <Button variant="outline" size="sm">
           ⊞ リスト
+        </Button>
+
+        <!-- ログアウトボタン -->
+        <Button
+          @click="handleSignOut"
+          variant="ghost"
+          size="sm"
+          title="ログアウト"
+        >
+          <LogOut :size="18" />
         </Button>
       </div>
     </div>
