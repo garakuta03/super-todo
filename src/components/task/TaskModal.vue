@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
-import DateTimePicker from '@/components/ui/DateTimePicker.vue'
+import CalendarDatePicker from '@/components/ui/CalendarDatePicker.vue'
 
 interface Props {
   open: boolean
@@ -133,13 +133,13 @@ const handleKeydown = (e: KeyboardEvent) => {
         </div>
 
         <!-- 開始日 -->
-        <DateTimePicker
+        <CalendarDatePicker
           v-model="startDate"
           label="開始日（任意）"
         />
 
         <!-- 期日 -->
-        <DateTimePicker
+        <CalendarDatePicker
           v-model="dueDate"
           label="期日（任意）"
         />

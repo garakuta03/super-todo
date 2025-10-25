@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import DateTimePicker from '@/components/ui/DateTimePicker.vue'
+import CalendarDatePicker from '@/components/ui/CalendarDatePicker.vue'
 
 interface Props {
   task: Task
@@ -118,22 +118,18 @@ const handleDelete = () => {
           </div>
 
           <!-- 開始日 -->
-          <div class="space-y-2">
-            <DateTimePicker
-              :model-value="startDate"
-              label="開始日"
-              @update:model-value="handleUpdateStartDate"
-            />
-          </div>
+          <CalendarDatePicker
+            :model-value="startDate"
+            label="開始日"
+            @update:model-value="handleUpdateStartDate"
+          />
 
           <!-- 期日 -->
-          <div class="space-y-2">
-            <DateTimePicker
-              :model-value="dueDate"
-              label="期日"
-              @update:model-value="handleUpdateDueDate"
-            />
-          </div>
+          <CalendarDatePicker
+            :model-value="dueDate"
+            label="期日"
+            @update:model-value="handleUpdateDueDate"
+          />
 
           <!-- 担当 -->
           <div class="flex items-center justify-between">
