@@ -47,15 +47,18 @@ useSortable(taskListRef, sortableTasks, {
   animation: 150,
   handle: '.drag-handle',
   ghostClass: 'opacity-50',
-  onEnd: async (event) => {
-    console.log('[TaskList] Drag end:', event)
+  onStart: () => {
+    console.log('[TaskList] Drag started')
+  },
+  onEnd: async (event: any) => {
+    console.log('[TaskList] Drag end:', { oldIndex: event.oldIndex, newIndex: event.newIndex })
     const { oldIndex, newIndex } = event
     if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) {
       console.log('[TaskList] No reorder needed')
       return
     }
 
-    // 並び替え後のタスクIDの配列を作成
+    // sortableTasksは自動的に並び替えられているので、そのIDリストを取得
     const taskIds = sortableTasks.value.map(t => t.id)
     console.log('[TaskList] New task order:', taskIds)
 
@@ -65,6 +68,8 @@ useSortable(taskListRef, sortableTasks, {
       console.log('[TaskList] Reorder successful')
     } catch (error) {
       console.error('[TaskList] Failed to reorder tasks:', error)
+      // エラー時は元に戻す
+      sortableTasks.value = [...tasks.value]
     }
   }
 })
