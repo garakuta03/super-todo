@@ -61,9 +61,13 @@ export const usersApi = {
 
 // Workspaces CRUD
 export const workspacesApi = {
-  // ワークスペース一覧を取得
-  async getAll(): Promise<Workspace[]> {
-    const q = query(collection(db, WORKSPACES_COLLECTION), orderBy('order'))
+  // ワークスペース一覧を取得（ユーザーIDでフィルタ）
+  async getAll(userId: string): Promise<Workspace[]> {
+    const q = query(
+      collection(db, WORKSPACES_COLLECTION),
+      where('userId', '==', userId),
+      orderBy('order')
+    )
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
       ...doc.data(),
@@ -95,9 +99,13 @@ export const workspacesApi = {
     await deleteDoc(doc(db, WORKSPACES_COLLECTION, id))
   },
 
-  // リアルタイムリスナー
-  subscribe(callback: (workspaces: Workspace[]) => void): Unsubscribe {
-    const q = query(collection(db, WORKSPACES_COLLECTION), orderBy('order'))
+  // リアルタイムリスナー（ユーザーIDでフィルタ）
+  subscribe(userId: string, callback: (workspaces: Workspace[]) => void): Unsubscribe {
+    const q = query(
+      collection(db, WORKSPACES_COLLECTION),
+      where('userId', '==', userId),
+      orderBy('order')
+    )
     return onSnapshot(q, (snapshot) => {
       const workspaces = snapshot.docs.map(doc => ({
         ...doc.data(),
@@ -112,9 +120,13 @@ export const workspacesApi = {
 
 // Projects CRUD
 export const projectsApi = {
-  // プロジェクト一覧を取得
-  async getAll(): Promise<Project[]> {
-    const q = query(collection(db, PROJECTS_COLLECTION), orderBy('order'))
+  // プロジェクト一覧を取得（ユーザーIDでフィルタ）
+  async getAll(userId: string): Promise<Project[]> {
+    const q = query(
+      collection(db, PROJECTS_COLLECTION),
+      where('userId', '==', userId),
+      orderBy('order')
+    )
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
       ...doc.data(),
@@ -162,9 +174,13 @@ export const projectsApi = {
     await deleteDoc(doc(db, PROJECTS_COLLECTION, id))
   },
 
-  // リアルタイムリスナー（全プロジェクト）
-  subscribe(callback: (projects: Project[]) => void): Unsubscribe {
-    const q = query(collection(db, PROJECTS_COLLECTION), orderBy('order'))
+  // リアルタイムリスナー（全プロジェクト、ユーザーIDでフィルタ）
+  subscribe(userId: string, callback: (projects: Project[]) => void): Unsubscribe {
+    const q = query(
+      collection(db, PROJECTS_COLLECTION),
+      where('userId', '==', userId),
+      orderBy('order')
+    )
     return onSnapshot(q, (snapshot) => {
       const projects = snapshot.docs.map(doc => ({
         ...doc.data(),
@@ -197,9 +213,13 @@ export const projectsApi = {
 
 // Lists CRUD
 export const listsApi = {
-  // リスト一覧を取得
-  async getAll(): Promise<List[]> {
-    const q = query(collection(db, LISTS_COLLECTION), orderBy('order'))
+  // リスト一覧を取得（ユーザーIDでフィルタ）
+  async getAll(userId: string): Promise<List[]> {
+    const q = query(
+      collection(db, LISTS_COLLECTION),
+      where('userId', '==', userId),
+      orderBy('order')
+    )
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
       ...doc.data(),
@@ -247,9 +267,13 @@ export const listsApi = {
     await deleteDoc(doc(db, LISTS_COLLECTION, id))
   },
 
-  // リアルタイムリスナー（全リスト）
-  subscribe(callback: (lists: List[]) => void): Unsubscribe {
-    const q = query(collection(db, LISTS_COLLECTION), orderBy('order'))
+  // リアルタイムリスナー（全リスト、ユーザーIDでフィルタ）
+  subscribe(userId: string, callback: (lists: List[]) => void): Unsubscribe {
+    const q = query(
+      collection(db, LISTS_COLLECTION),
+      where('userId', '==', userId),
+      orderBy('order')
+    )
     return onSnapshot(q, (snapshot) => {
       const lists = snapshot.docs.map(doc => ({
         ...doc.data(),
@@ -282,9 +306,13 @@ export const listsApi = {
 
 // Tasks CRUD
 export const tasksApi = {
-  // 全タスクを取得
-  async getAll(): Promise<Task[]> {
-    const snapshot = await getDocs(collection(db, TASKS_COLLECTION))
+  // 全タスクを取得（ユーザーIDでフィルタ）
+  async getAll(userId: string): Promise<Task[]> {
+    const q = query(
+      collection(db, TASKS_COLLECTION),
+      where('userId', '==', userId)
+    )
+    const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
       ...doc.data(),
       id: doc.id,
@@ -334,9 +362,13 @@ export const tasksApi = {
     await deleteDoc(doc(db, TASKS_COLLECTION, id))
   },
 
-  // リアルタイムリスナー（全タスク）
-  subscribe(callback: (tasks: Task[]) => void): Unsubscribe {
-    return onSnapshot(collection(db, TASKS_COLLECTION), (snapshot) => {
+  // リアルタイムリスナー（全タスク、ユーザーIDでフィルタ）
+  subscribe(userId: string, callback: (tasks: Task[]) => void): Unsubscribe {
+    const q = query(
+      collection(db, TASKS_COLLECTION),
+      where('userId', '==', userId)
+    )
+    return onSnapshot(q, (snapshot) => {
       const tasks = snapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id,

@@ -31,7 +31,7 @@ const formattedDate = computed(() =>
     </div>
 
     <!-- ドラッグハンドル -->
-    <button class="text-gray-400 hover:text-gray-600 cursor-grab" @click.stop>
+    <button class="drag-handle text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing" @click.stop>
       ⋮⋮
     </button>
 

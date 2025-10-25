@@ -62,7 +62,14 @@ export const useListStore = defineStore('list', () => {
 
   // Firestoreリアルタイムリスナーを設定
   const setupFirestoreListener = () => {
-    unsubscribe = listsApi.subscribe((listArray) => {
+    const authStore = useAuthStore()
+
+    if (!authStore.user) {
+      console.warn('Cannot setup list listener: user not authenticated')
+      return
+    }
+
+    unsubscribe = listsApi.subscribe(authStore.user.uid, (listArray) => {
       lists.value = listArray.reduce((acc, list) => {
         acc[list.id] = list
         return acc

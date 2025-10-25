@@ -62,7 +62,14 @@ export const useProjectStore = defineStore('project', () => {
 
   // Firestoreリアルタイムリスナーを設定
   const setupFirestoreListener = () => {
-    unsubscribe = projectsApi.subscribe((projectArray) => {
+    const authStore = useAuthStore()
+
+    if (!authStore.user) {
+      console.warn('Cannot setup project listener: user not authenticated')
+      return
+    }
+
+    unsubscribe = projectsApi.subscribe(authStore.user.uid, (projectArray) => {
       projects.value = projectArray.reduce((acc, project) => {
         acc[project.id] = project
         return acc

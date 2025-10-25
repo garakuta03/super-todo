@@ -51,7 +51,14 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
   // Firestoreリアルタイムリスナーを設定
   const setupFirestoreListener = () => {
-    unsubscribe = workspacesApi.subscribe((workspaceArray) => {
+    const authStore = useAuthStore()
+
+    if (!authStore.user) {
+      console.warn('Cannot setup workspace listener: user not authenticated')
+      return
+    }
+
+    unsubscribe = workspacesApi.subscribe(authStore.user.uid, (workspaceArray) => {
       workspaces.value = workspaceArray.reduce((acc, workspace) => {
         acc[workspace.id] = workspace
         return acc

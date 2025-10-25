@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useTaskStore } from '@/stores/taskStore'
 import { useListStore } from '@/stores/listStore'
+import { useSortable } from '@vueuse/integrations/useSortable'
 import TaskRow from './TaskRow.vue'
 import TaskPanel from './TaskPanel.vue'
 import type { Task } from '@/lib/types'
@@ -11,6 +12,7 @@ const listStore = useListStore()
 
 const selectedTask = ref<Task | null>(null)
 const showPanel = ref(false)
+const taskListRef = ref<HTMLDivElement | null>(null)
 
 const tasks = computed(() => {
   if (!listStore.currentListId) return []
@@ -30,6 +32,31 @@ const handleClosePanel = () => {
   showPanel.value = false
   selectedTask.value = null
 }
+
+// ドラッグ&ドロップの設定
+useSortable(taskListRef, tasks.value, {
+  animation: 150,
+  handle: '.drag-handle',
+  ghostClass: 'opacity-50',
+  onEnd: async (event) => {
+    const { oldIndex, newIndex } = event
+    if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
+
+    // 並び替え後のタスクIDの配列を作成
+    const reorderedTasks = [...tasks.value]
+    const [movedTask] = reorderedTasks.splice(oldIndex, 1)
+    reorderedTasks.splice(newIndex, 0, movedTask)
+
+    const taskIds = reorderedTasks.map(t => t.id)
+
+    // Firestoreに並び順を保存
+    try {
+      await taskStore.reorderTasks(taskIds)
+    } catch (error) {
+      console.error('Failed to reorder tasks:', error)
+    }
+  }
+})
 </script>
 
 <template>
@@ -54,7 +81,7 @@ const handleClosePanel = () => {
     </div>
 
     <!-- タスク一覧 -->
-    <div v-if="tasks.length > 0">
+    <div v-if="tasks.length > 0" ref="taskListRef">
       <TaskRow
         v-for="task in tasks"
         :key="task.id"

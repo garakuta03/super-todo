@@ -13,7 +13,14 @@ export const useTaskStore = defineStore('task', () => {
 
   // Firestoreリアルタイムリスナーを設定
   const setupFirestoreListener = () => {
-    unsubscribe = tasksApi.subscribe((taskList) => {
+    const authStore = useAuthStore()
+
+    if (!authStore.user) {
+      console.warn('Cannot setup task listener: user not authenticated')
+      return
+    }
+
+    unsubscribe = tasksApi.subscribe(authStore.user.uid, (taskList) => {
       tasks.value = taskList.reduce((acc, task) => {
         acc[task.id] = task
         return acc
@@ -106,6 +113,22 @@ export const useTaskStore = defineStore('task', () => {
     await updateTask(id, { completed })
   }
 
+  // タスクの並び替え
+  const reorderTasks = async (taskIds: string[]) => {
+    // 各タスクのorderを更新
+    const updatePromises = taskIds.map((taskId, index) => {
+      if (!tasks.value[taskId]) return Promise.resolve()
+      return updateTask(taskId, { order: index })
+    })
+
+    try {
+      await Promise.all(updatePromises)
+    } catch (error) {
+      console.error('Failed to reorder tasks:', error)
+      throw error
+    }
+  }
+
   // 初期化 - Firestoreリスナーをセットアップ
   setupFirestoreListener()
 
@@ -117,6 +140,7 @@ export const useTaskStore = defineStore('task', () => {
     createTask,
     updateTask,
     deleteTask,
-    toggleTask
+    toggleTask,
+    reorderTasks
   }
 })

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader2 } from 'lucide-vue-next'
+import { validateDisplayName } from '@/lib/validation'
 
 const emit = defineEmits<{
   complete: [displayName: string]
@@ -15,13 +16,10 @@ const error = ref('')
 const handleSubmit = async () => {
   const name = displayName.value.trim()
 
-  if (!name) {
-    error.value = '名前を入力してください'
-    return
-  }
-
-  if (name.length > 50) {
-    error.value = '名前は50文字以内で入力してください'
+  // バリデーション
+  const validation = validateDisplayName(name)
+  if (!validation.valid) {
+    error.value = validation.error || '入力が無効です'
     return
   }
 

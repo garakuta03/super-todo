@@ -17,52 +17,99 @@ service cloud.firestore {
       return request.resource.data.userId == request.auth.uid;
     }
 
+    // ヘルパー関数: 必須フィールドの存在確認
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ヘルパー関数: 文字列の長さ検証
+    function isValidStringLength(field, maxLen) {
+      return request.resource.data[field] is string
+        && request.resource.data[field].size() <= maxLen;
+    }
+
     // ユーザープロファイルのセキュリティルール
     match /users/{userId} {
       // 自分のプロファイルのみ読み書き可能
       allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated()
+                    && request.auth.uid == userId
+                    && hasRequiredFields(['uid', 'email', 'displayName', 'isInitialized', 'createdAt', 'updatedAt'])
+                    && isValidStringLength('displayName', 50)
+                    && request.resource.data.uid == userId
+                    && request.resource.data.isInitialized is bool;
+      allow update: if isAuthenticated()
+                    && request.auth.uid == userId
+                    && request.resource.data.uid == resource.data.uid; // UIDは変更不可
       allow delete: if false; // プロファイルの削除は不可
     }
 
     // ワークスペースのセキュリティルール
     match /workspaces/{workspaceId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && isValidNewDocument();
+      allow create: if isAuthenticated()
+                    && isValidNewDocument()
+                    && hasRequiredFields(['id', 'name', 'userId', 'order', 'createdAt', 'updatedAt'])
+                    && isValidStringLength('name', 100)
+                    && request.resource.data.order is number;
       allow update: if isAuthenticated()
                     && isOwner(resource.data.userId)
-                    && request.resource.data.userId == resource.data.userId;
+                    && request.resource.data.userId == resource.data.userId
+                    && (!('name' in request.resource.data) || isValidStringLength('name', 100));
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
     // プロジェクトのセキュリティルール
     match /projects/{projectId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && isValidNewDocument();
+      allow create: if isAuthenticated()
+                    && isValidNewDocument()
+                    && hasRequiredFields(['id', 'name', 'workspaceId', 'userId', 'order', 'createdAt', 'updatedAt'])
+                    && isValidStringLength('name', 100)
+                    && request.resource.data.order is number;
       allow update: if isAuthenticated()
                     && isOwner(resource.data.userId)
-                    && request.resource.data.userId == resource.data.userId;
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.workspaceId == resource.data.workspaceId // ワークスペースIDは変更不可
+                    && (!('name' in request.resource.data) || isValidStringLength('name', 100));
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
     // リストのセキュリティルール
     match /lists/{listId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && isValidNewDocument();
+      allow create: if isAuthenticated()
+                    && isValidNewDocument()
+                    && hasRequiredFields(['id', 'name', 'projectId', 'userId', 'order', 'createdAt', 'updatedAt'])
+                    && isValidStringLength('name', 100)
+                    && request.resource.data.order is number;
       allow update: if isAuthenticated()
                     && isOwner(resource.data.userId)
-                    && request.resource.data.userId == resource.data.userId;
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.projectId == resource.data.projectId // プロジェクトIDは変更不可
+                    && (!('name' in request.resource.data) || isValidStringLength('name', 100));
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
     // タスクのセキュリティルール
     match /tasks/{taskId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && isValidNewDocument();
+      allow create: if isAuthenticated()
+                    && isValidNewDocument()
+                    && hasRequiredFields(['id', 'title', 'status', 'completed', 'listId', 'userId', 'order', 'createdAt', 'updatedAt'])
+                    && isValidStringLength('title', 255)
+                    && (!('description' in request.resource.data) || isValidStringLength('description', 5000))
+                    && request.resource.data.status in ['TODO', 'IN_PROGRESS', 'DONE']
+                    && request.resource.data.completed is bool
+                    && request.resource.data.order is number;
       allow update: if isAuthenticated()
                     && isOwner(resource.data.userId)
-                    && request.resource.data.userId == resource.data.userId;
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.listId == resource.data.listId // リストIDは変更不可
+                    && (!('title' in request.resource.data) || isValidStringLength('title', 255))
+                    && (!('description' in request.resource.data) || isValidStringLength('description', 5000))
+                    && (!('status' in request.resource.data) || request.resource.data.status in ['TODO', 'IN_PROGRESS', 'DONE'])
+                    && (!('completed' in request.resource.data) || request.resource.data.completed is bool);
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
