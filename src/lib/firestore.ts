@@ -88,10 +88,21 @@ export const workspacesApi = {
 
   // ワークスペースを更新
   async update(id: string, updates: Partial<Workspace>): Promise<void> {
-    await updateDoc(doc(db, WORKSPACES_COLLECTION, id), {
+    // Firestoreはundefinedを扱えないので、オプションフィールドはnullに変換
+    const updateData: any = {
       ...updates,
       updatedAt: new Date()
-    })
+    }
+
+    // オプションフィールドがundefinedの場合、nullに変換
+    if ('icon' in updates && updates.icon === undefined) {
+      updateData.icon = null
+    }
+    if ('color' in updates && updates.color === undefined) {
+      updateData.color = null
+    }
+
+    await updateDoc(doc(db, WORKSPACES_COLLECTION, id), updateData)
   },
 
   // ワークスペースを削除
@@ -163,10 +174,21 @@ export const projectsApi = {
 
   // プロジェクトを更新
   async update(id: string, updates: Partial<Project>): Promise<void> {
-    await updateDoc(doc(db, PROJECTS_COLLECTION, id), {
+    // Firestoreはundefinedを扱えないので、オプションフィールドはnullに変換
+    const updateData: any = {
       ...updates,
       updatedAt: new Date()
-    })
+    }
+
+    // オプションフィールドがundefinedの場合、nullに変換
+    if ('icon' in updates && updates.icon === undefined) {
+      updateData.icon = null
+    }
+    if ('color' in updates && updates.color === undefined) {
+      updateData.color = null
+    }
+
+    await updateDoc(doc(db, PROJECTS_COLLECTION, id), updateData)
   },
 
   // プロジェクトを削除
@@ -256,10 +278,21 @@ export const listsApi = {
 
   // リストを更新
   async update(id: string, updates: Partial<List>): Promise<void> {
-    await updateDoc(doc(db, LISTS_COLLECTION, id), {
+    // Firestoreはundefinedを扱えないので、オプションフィールドはnullに変換
+    const updateData: any = {
       ...updates,
       updatedAt: new Date()
-    })
+    }
+
+    // オプションフィールドがundefinedの場合、nullに変換
+    if ('icon' in updates && updates.icon === undefined) {
+      updateData.icon = null
+    }
+    if ('color' in updates && updates.color === undefined) {
+      updateData.color = null
+    }
+
+    await updateDoc(doc(db, LISTS_COLLECTION, id), updateData)
   },
 
   // リストを削除
@@ -318,6 +351,7 @@ export const tasksApi = {
       id: doc.id,
       createdAt: doc.data().createdAt?.toDate() || new Date(),
       updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+      startDate: doc.data().startDate?.toDate() || undefined,
       dueDate: doc.data().dueDate?.toDate() || undefined
     } as Task))
   },
@@ -335,6 +369,7 @@ export const tasksApi = {
       id: doc.id,
       createdAt: doc.data().createdAt?.toDate() || new Date(),
       updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+      startDate: doc.data().startDate?.toDate() || undefined,
       dueDate: doc.data().dueDate?.toDate() || undefined
     } as Task))
   },
@@ -345,16 +380,30 @@ export const tasksApi = {
       ...task,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
+      startDate: task.startDate || null,
       dueDate: task.dueDate || null
     })
   },
 
   // タスクを更新
   async update(id: string, updates: Partial<Task>): Promise<void> {
-    await updateDoc(doc(db, TASKS_COLLECTION, id), {
+    // Firestoreはundefinedを扱えないので、日付フィールドはnullに変換
+    const updateData: any = {
       ...updates,
       updatedAt: new Date()
-    })
+    }
+
+    // startDateが明示的に渡されている場合（undefinedでも）、nullに変換
+    if ('startDate' in updates) {
+      updateData.startDate = updates.startDate || null
+    }
+
+    // dueDateが明示的に渡されている場合（undefinedでも）、nullに変換
+    if ('dueDate' in updates) {
+      updateData.dueDate = updates.dueDate || null
+    }
+
+    await updateDoc(doc(db, TASKS_COLLECTION, id), updateData)
   },
 
   // タスクを削除
@@ -374,6 +423,7 @@ export const tasksApi = {
         id: doc.id,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        startDate: doc.data().startDate?.toDate() || undefined,
         dueDate: doc.data().dueDate?.toDate() || undefined
       } as Task))
       callback(tasks)
@@ -393,6 +443,7 @@ export const tasksApi = {
         id: doc.id,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        startDate: doc.data().startDate?.toDate() || undefined,
         dueDate: doc.data().dueDate?.toDate() || undefined
       } as Task))
       callback(tasks)

@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import DateTimePicker from '@/components/ui/DateTimePicker.vue'
 
 interface Props {
   open: boolean
@@ -27,6 +28,8 @@ const taskStore = useTaskStore()
 const listStore = useListStore()
 
 const title = ref('')
+const startDate = ref<Date | null>(null)
+const dueDate = ref<Date | null>(null)
 const continueCreating = ref(false)
 const validationError = ref<string>('')
 
@@ -34,6 +37,8 @@ const validationError = ref<string>('')
 watch(() => props.open, (newValue) => {
   if (!newValue) {
     title.value = ''
+    startDate.value = null
+    dueDate.value = null
     continueCreating.value = false
     validationError.value = ''
   }
@@ -77,6 +82,8 @@ const handleSubmit = async () => {
       status: 'TODO',
       completed: false,
       listId: listStore.currentListId,
+      startDate: startDate.value || undefined,
+      dueDate: dueDate.value || undefined,
       order: taskStore.allTasks.length
     })
 
@@ -84,6 +91,8 @@ const handleSubmit = async () => {
 
     if (continueCreating.value) {
       title.value = ''
+      startDate.value = null
+      dueDate.value = null
     } else {
       emit('close')
     }
@@ -123,6 +132,18 @@ const handleKeydown = (e: KeyboardEvent) => {
           </p>
         </div>
 
+        <!-- 開始日 -->
+        <DateTimePicker
+          v-model="startDate"
+          label="開始日（任意）"
+        />
+
+        <!-- 期日 -->
+        <DateTimePicker
+          v-model="dueDate"
+          label="期日（任意）"
+        />
+
         <!-- 続けて作成チェックボックス -->
         <div class="flex items-center gap-2">
           <Checkbox
@@ -138,27 +159,16 @@ const handleKeydown = (e: KeyboardEvent) => {
         </div>
 
         <!-- アクション -->
-        <div class="flex items-center justify-between pt-2">
-          <div class="flex items-center gap-2">
-            <button class="text-sm text-gray-600 hover:text-gray-900">
-              👤 担当者を追加
-            </button>
-            <button class="text-sm text-gray-600 hover:text-gray-900">
-              📅
-            </button>
-          </div>
-
-          <div class="flex gap-2">
-            <Button variant="outline" @click="emit('close')">
-              キャンセル
-            </Button>
-            <Button
-              @click="handleSubmit"
-              :disabled="!title.trim()"
-            >
-              追加する
-            </Button>
-          </div>
+        <div class="flex gap-2 justify-end pt-2">
+          <Button variant="outline" @click="emit('close')">
+            キャンセル
+          </Button>
+          <Button
+            @click="handleSubmit"
+            :disabled="!title.trim()"
+          >
+            追加する
+          </Button>
         </div>
       </div>
     </DialogContent>

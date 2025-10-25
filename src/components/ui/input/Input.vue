@@ -10,6 +10,7 @@ const props = defineProps<{
   placeholder?: string
   disabled?: boolean
   autofocus?: boolean
+  autocomplete?: string
 }>()
 
 const emits = defineEmits<{
@@ -32,6 +33,9 @@ const classes = computed(() =>
     :placeholder="placeholder"
     :disabled="disabled"
     :autofocus="autofocus"
+    :autocomplete="autocomplete || 'off'"
+    data-1p-ignore
+    data-lpignore="true"
     @input="emits('update:modelValue', ($event.target as HTMLInputElement).value)"
   />
 </template>

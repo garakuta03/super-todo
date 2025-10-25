@@ -10,8 +10,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { formatDate } from '@/lib/utils'
+import DateTimePicker from '@/components/ui/DateTimePicker.vue'
 
 interface Props {
   task: Task
@@ -25,13 +26,29 @@ const emit = defineEmits<{
 }>()
 
 const taskStore = useTaskStore()
+const title = ref(props.task.title)
 const description = ref(props.task.description || '')
 const selectedStatus = ref(props.task.status)
+const startDate = ref<Date | null>(props.task.startDate || null)
+const dueDate = ref<Date | null>(props.task.dueDate || null)
 
 watch(() => props.task, (newTask) => {
+  title.value = newTask.title
   description.value = newTask.description || ''
   selectedStatus.value = newTask.status
+  startDate.value = newTask.startDate || null
+  dueDate.value = newTask.dueDate || null
 }, { immediate: true })
+
+const handleUpdateTitle = () => {
+  if (!title.value.trim()) {
+    title.value = props.task.title // 空の場合は元に戻す
+    return
+  }
+  taskStore.updateTask(props.task.id, {
+    title: title.value.trim()
+  })
+}
 
 const handleUpdateDescription = () => {
   taskStore.updateTask(props.task.id, {
@@ -48,6 +65,20 @@ const handleUpdateStatus = (e: Event) => {
   })
 }
 
+const handleUpdateStartDate = (date: Date | null) => {
+  startDate.value = date
+  taskStore.updateTask(props.task.id, {
+    startDate: date || undefined
+  })
+}
+
+const handleUpdateDueDate = (date: Date | null) => {
+  dueDate.value = date
+  taskStore.updateTask(props.task.id, {
+    dueDate: date || undefined
+  })
+}
+
 const handleDelete = () => {
   emit('delete')
 }
@@ -57,10 +88,19 @@ const handleDelete = () => {
   <Sheet :open="open" @update:open="(val) => !val && emit('close')">
     <SheetContent v-if="open" @close="emit('close')">
       <SheetHeader>
-        <SheetTitle>{{ task.title }}</SheetTitle>
+        <SheetTitle>タスクの編集</SheetTitle>
       </SheetHeader>
 
       <div class="space-y-6 mt-6">
+        <!-- タスク名 -->
+        <div>
+          <h3 class="text-sm font-medium mb-2">タスク名</h3>
+          <Input
+            v-model="title"
+            @blur="handleUpdateTitle"
+            placeholder="タスク名を入力..."
+          />
+        </div>
         <!-- メタデータ -->
         <div class="space-y-3">
           <!-- ステータス -->
@@ -77,12 +117,22 @@ const handleDelete = () => {
             </select>
           </div>
 
-          <!-- 期間 -->
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-600">期間</span>
-            <span class="text-sm">
-              {{ task.dueDate ? formatDate(task.dueDate) : '指定なし' }}
-            </span>
+          <!-- 開始日 -->
+          <div class="space-y-2">
+            <DateTimePicker
+              :model-value="startDate"
+              label="開始日"
+              @update:model-value="handleUpdateStartDate"
+            />
+          </div>
+
+          <!-- 期日 -->
+          <div class="space-y-2">
+            <DateTimePicker
+              :model-value="dueDate"
+              label="期日"
+              @update:model-value="handleUpdateDueDate"
+            />
           </div>
 
           <!-- 担当 -->

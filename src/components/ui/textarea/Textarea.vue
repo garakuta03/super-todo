@@ -7,6 +7,7 @@ const props = defineProps<{
   class?: HTMLAttributes['class']
   placeholder?: string
   disabled?: boolean
+  autocomplete?: string
 }>()
 
 const emits = defineEmits<{
@@ -27,6 +28,9 @@ const classes = computed(() =>
     :value="modelValue"
     :placeholder="placeholder"
     :disabled="disabled"
+    :autocomplete="autocomplete || 'off'"
+    data-1p-ignore
+    data-lpignore="true"
     @input="emits('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
   />
 </template>

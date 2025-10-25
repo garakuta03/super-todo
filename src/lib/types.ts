@@ -57,7 +57,8 @@ export interface Task {
   completed: boolean
   listId: string
   userId: string  // ユーザーID（セキュリティ必須）
-  dueDate?: Date
+  startDate?: Date  // 開始日
+  dueDate?: Date    // 期日
   assignee?: string
   tags?: string[]
   order: number
