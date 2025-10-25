@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useTaskStore } from '@/stores/taskStore'
 import { useListStore } from '@/stores/listStore'
+import { validateTaskTitle } from '@/lib/validation'
 import {
   Dialog,
   DialogContent,
@@ -26,31 +27,49 @@ const listStore = useListStore()
 
 const title = ref('')
 const continueCreating = ref(false)
+const validationError = ref<string>('')
 
 // モーダルが閉じる時にリセット
 watch(() => props.open, (newValue) => {
   if (!newValue) {
     title.value = ''
     continueCreating.value = false
+    validationError.value = ''
   }
 })
 
 const handleSubmit = () => {
-  if (!title.value.trim()) return
-  if (!listStore.currentListId) return
+  // 入力検証
+  const validation = validateTaskTitle(title.value)
+  if (!validation.valid) {
+    validationError.value = validation.error || '入力が無効です'
+    return
+  }
 
-  taskStore.createTask({
-    title: title.value.trim(),
-    status: 'TODO',
-    completed: false,
-    listId: listStore.currentListId,
-    order: taskStore.allTasks.length
-  })
+  if (!listStore.currentListId) {
+    validationError.value = 'リストが選択されていません'
+    return
+  }
 
-  if (continueCreating.value) {
-    title.value = ''
-  } else {
-    emit('close')
+  try {
+    taskStore.createTask({
+      title: title.value.trim(),
+      status: 'TODO',
+      completed: false,
+      listId: listStore.currentListId,
+      order: taskStore.allTasks.length
+    })
+
+    validationError.value = ''
+
+    if (continueCreating.value) {
+      title.value = ''
+    } else {
+      emit('close')
+    }
+  } catch (error) {
+    validationError.value = 'タスクの作成に失敗しました'
+    console.error('Task creation failed:', error)
   }
 }
 
@@ -71,12 +90,18 @@ const handleKeydown = (e: KeyboardEvent) => {
 
       <div class="space-y-4 mt-4">
         <!-- タイトル入力 -->
-        <Input
-          v-model="title"
-          placeholder="タスクを入力..."
-          @keydown="handleKeydown"
-          autofocus
-        />
+        <div>
+          <Input
+            v-model="title"
+            placeholder="タスクを入力..."
+            @keydown="handleKeydown"
+            autofocus
+            :class="{ 'border-red-500': validationError }"
+          />
+          <p v-if="validationError" class="text-sm text-red-600 mt-1">
+            {{ validationError }}
+          </p>
+        </div>
 
         <!-- 続けて作成チェックボックス -->
         <div class="flex items-center gap-2">

@@ -6,6 +6,7 @@ export interface Task {
   status: 'TODO' | 'IN_PROGRESS' | 'DONE'
   completed: boolean
   listId: string
+  userId: string  // ユーザーID（セキュリティ必須）
   dueDate?: Date
   assignee?: string
   tags?: string[]
@@ -18,6 +19,7 @@ export interface Task {
 export interface List {
   id: string
   name: string
+  userId: string  // ユーザーID（セキュリティ必須）
   color?: string
   icon?: string
   order: number

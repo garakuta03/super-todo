@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ヘルパー関数: ユーザーが認証済みか確認
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ヘルパー関数: ユーザーがドキュメントの所有者か確認
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // ヘルパー関数: 新規作成時のユーザーIDが正しいか確認
+    function isValidNewDocument() {
+      return request.resource.data.userId == request.auth.uid;
+    }
+
+    // リストのセキュリティルール
+    match /lists/{listId} {
+      // 読み取り: 認証済みユーザーのみ、自分のリストのみ
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+
+      // 作成: 認証済みユーザーのみ、userIdが自分のIDであること
+      allow create: if isAuthenticated()
+                    && isValidNewDocument()
+                    && request.resource.data.keys().hasAll(['name', 'userId', 'order', 'createdAt']);
+
+      // 更新: 認証済みユーザーのみ、自分のリストのみ、userIdは変更不可
+      allow update: if isAuthenticated()
+                    && isOwner(resource.data.userId)
+                    && request.resource.data.userId == resource.data.userId;
+
+      // 削除: 認証済みユーザーのみ、自分のリストのみ
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // タスクのセキュリティルール
+    match /tasks/{taskId} {
+      // 読み取り: 認証済みユーザーのみ、自分のタスクのみ
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+
+      // 作成: 認証済みユーザーのみ、userIdが自分のIDであること
+      allow create: if isAuthenticated()
+                    && isValidNewDocument()
+                    && request.resource.data.keys().hasAll(['title', 'userId', 'listId', 'status', 'completed', 'order', 'createdAt', 'updatedAt']);
+
+      // 更新: 認証済みユーザーのみ、自分のタスクのみ、userIdは変更不可
+      allow update: if isAuthenticated()
+                    && isOwner(resource.data.userId)
+                    && request.resource.data.userId == resource.data.userId;
+
+      // 削除: 認証済みユーザーのみ、自分のタスクのみ
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // その他のコレクションへのアクセスは拒否
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

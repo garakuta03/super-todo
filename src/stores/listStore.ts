@@ -3,6 +3,7 @@ import { ref, computed, onUnmounted } from 'vue'
 import { nanoid } from 'nanoid'
 import type { List } from '@/lib/types'
 import { listsApi } from '@/lib/firestore'
+import { useAuthStore } from '@/stores/authStore'
 
 // Firestoreを使用するかどうか（環境変数で制御）
 const USE_FIRESTORE = (import.meta.env.VITE_USE_FIRESTORE || 'false') === 'true'
@@ -28,8 +29,10 @@ export const useListStore = defineStore('list', () => {
 
     // デフォルトリストがなければ作成（LocalStorageモードのみ）
     if (Object.keys(lists.value).length === 0 && !USE_FIRESTORE) {
+      const authStore = useAuthStore()
       const defaultList: List = {
         name: '最初のタスクリスト',
+        userId: authStore.user?.uid || 'anonymous',  // userIdを追加
         order: 0,
         id: nanoid(),
         createdAt: new Date()
@@ -108,10 +111,18 @@ export const useListStore = defineStore('list', () => {
   )
 
   // Actions
-  const createList = async (listData: Omit<List, 'id' | 'createdAt'>) => {
+  const createList = async (listData: Omit<List, 'id' | 'userId' | 'createdAt'>) => {
+    const authStore = useAuthStore()
+
+    // ユーザーが認証されていない場合はエラー
+    if (!authStore.user) {
+      throw new Error('User must be authenticated to create lists')
+    }
+
     const list: List = {
       ...listData,
       id: nanoid(),
+      userId: authStore.user.uid,  // 現在のユーザーIDを設定
       createdAt: new Date()
     }
 

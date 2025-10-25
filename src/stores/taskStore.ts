@@ -3,9 +3,7 @@ import { ref, computed, onUnmounted } from 'vue'
 import { nanoid } from 'nanoid'
 import type { Task } from '@/lib/types'
 import { tasksApi } from '@/lib/firestore'
-
-// Firestoreを使用するかどうか（環境変数で制御）
-const USE_FIRESTORE = (import.meta.env.VITE_USE_FIRESTORE || 'false') === 'true'
+import { useAuthStore } from '@/stores/authStore'
 
 export const useTaskStore = defineStore('task', () => {
   // State
@@ -13,50 +11,8 @@ export const useTaskStore = defineStore('task', () => {
   const isLoading = ref(false)
   let unsubscribe: (() => void) | null = null
 
-  // LocalStorageから読み込み
-  const loadFromStorage = () => {
-    const stored = localStorage.getItem('tone-tasks')
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      // Date オブジェクトに変換
-      Object.keys(parsed).forEach((key) => {
-        parsed[key].createdAt = new Date(parsed[key].createdAt)
-        parsed[key].updatedAt = new Date(parsed[key].updatedAt)
-        if (parsed[key].dueDate) {
-          parsed[key].dueDate = new Date(parsed[key].dueDate)
-        }
-      })
-      tasks.value = parsed
-    }
-  }
-
-  // LocalStorageに保存
-  const saveToStorage = () => {
-    localStorage.setItem('tone-tasks', JSON.stringify(tasks.value))
-  }
-
-  // Firestoreから読み込み
-  const loadFromFirestore = async () => {
-    if (!USE_FIRESTORE) return
-
-    isLoading.value = true
-    try {
-      const taskList = await tasksApi.getAll()
-      tasks.value = taskList.reduce((acc, task) => {
-        acc[task.id] = task
-        return acc
-      }, {} as Record<string, Task>)
-    } catch (error) {
-      console.error('Failed to load tasks from Firestore:', error)
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   // Firestoreリアルタイムリスナーを設定
   const setupFirestoreListener = () => {
-    if (!USE_FIRESTORE) return
-
     unsubscribe = tasksApi.subscribe((taskList) => {
       tasks.value = taskList.reduce((acc, task) => {
         acc[task.id] = task
@@ -82,26 +38,30 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   // Actions
-  const createTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createTask = async (taskData: Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    const authStore = useAuthStore()
+
+    // ユーザーが認証されていない場合はエラー
+    if (!authStore.user) {
+      throw new Error('User must be authenticated to create tasks')
+    }
+
     const task: Task = {
       ...taskData,
       id: nanoid(),
+      userId: authStore.user.uid,  // 現在のユーザーIDを設定
       createdAt: new Date(),
       updatedAt: new Date()
     }
 
     tasks.value[task.id] = task
 
-    if (USE_FIRESTORE) {
-      try {
-        await tasksApi.create(task)
-      } catch (error) {
-        console.error('Failed to create task in Firestore:', error)
-        delete tasks.value[task.id]
-        throw error
-      }
-    } else {
-      saveToStorage()
+    try {
+      await tasksApi.create(task)
+    } catch (error) {
+      console.error('Failed to create task in Firestore:', error)
+      delete tasks.value[task.id]
+      throw error
     }
 
     return task
@@ -117,16 +77,12 @@ export const useTaskStore = defineStore('task', () => {
       updatedAt: new Date()
     }
 
-    if (USE_FIRESTORE) {
-      try {
-        await tasksApi.update(id, updates)
-      } catch (error) {
-        console.error('Failed to update task in Firestore:', error)
-        tasks.value[id] = oldTask
-        throw error
-      }
-    } else {
-      saveToStorage()
+    try {
+      await tasksApi.update(id, updates)
+    } catch (error) {
+      console.error('Failed to update task in Firestore:', error)
+      tasks.value[id] = oldTask
+      throw error
     }
   }
 
@@ -134,16 +90,12 @@ export const useTaskStore = defineStore('task', () => {
     const oldTask = tasks.value[id]
     delete tasks.value[id]
 
-    if (USE_FIRESTORE) {
-      try {
-        await tasksApi.delete(id)
-      } catch (error) {
-        console.error('Failed to delete task in Firestore:', error)
-        tasks.value[id] = oldTask
-        throw error
-      }
-    } else {
-      saveToStorage()
+    try {
+      await tasksApi.delete(id)
+    } catch (error) {
+      console.error('Failed to delete task in Firestore:', error)
+      tasks.value[id] = oldTask
+      throw error
     }
   }
 
@@ -154,12 +106,8 @@ export const useTaskStore = defineStore('task', () => {
     await updateTask(id, { completed })
   }
 
-  // 初期化
-  if (USE_FIRESTORE) {
-    setupFirestoreListener()
-  } else {
-    loadFromStorage()
-  }
+  // 初期化 - Firestoreリスナーをセットアップ
+  setupFirestoreListener()
 
   return {
     tasks,
@@ -169,8 +117,6 @@ export const useTaskStore = defineStore('task', () => {
     createTask,
     updateTask,
     deleteTask,
-    toggleTask,
-    loadFromStorage,
-    loadFromFirestore
+    toggleTask
   }
 })
