@@ -1,12 +1,18 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { nanoid } from 'nanoid'
 import type { List } from '@/lib/types'
+import { listsApi } from '@/lib/firestore'
+
+// Firestoreを使用するかどうか（環境変数で制御）
+const USE_FIRESTORE = (import.meta.env.VITE_USE_FIRESTORE || 'false') === 'true'
 
 export const useListStore = defineStore('list', () => {
   // State
   const lists = ref<Record<string, List>>({})
   const currentListId = ref<string>('')
+  const isLoading = ref(false)
+  let unsubscribe: (() => void) | null = null
 
   // LocalStorageから読み込み
   const loadFromStorage = () => {
@@ -20,11 +26,18 @@ export const useListStore = defineStore('list', () => {
       lists.value = parsed
     }
 
-    // デフォルトリストがなければ作成
-    if (Object.keys(lists.value).length === 0) {
-      const defaultList = createList({ name: '最初のタスクリスト', order: 0 })
+    // デフォルトリストがなければ作成（LocalStorageモードのみ）
+    if (Object.keys(lists.value).length === 0 && !USE_FIRESTORE) {
+      const defaultList: List = {
+        name: '最初のタスクリスト',
+        order: 0,
+        id: nanoid(),
+        createdAt: new Date()
+      }
+      lists.value[defaultList.id] = defaultList
+      saveToStorage()
       currentListId.value = defaultList.id
-    } else {
+    } else if (Object.keys(lists.value).length > 0) {
       currentListId.value = Object.keys(lists.value)[0]
     }
   }
@@ -34,6 +47,59 @@ export const useListStore = defineStore('list', () => {
     localStorage.setItem('tone-lists', JSON.stringify(lists.value))
   }
 
+  // Firestoreから読み込み
+  const loadFromFirestore = async () => {
+    if (!USE_FIRESTORE) return
+
+    isLoading.value = true
+    try {
+      const listArray = await listsApi.getAll()
+      lists.value = listArray.reduce((acc, list) => {
+        acc[list.id] = list
+        return acc
+      }, {} as Record<string, List>)
+
+      // デフォルトリストがなければ作成
+      if (Object.keys(lists.value).length === 0) {
+        const defaultList = await createList({ name: '最初のタスクリスト', order: 0 })
+        currentListId.value = defaultList.id
+      } else {
+        currentListId.value = Object.keys(lists.value)[0]
+      }
+    } catch (error) {
+      console.error('Failed to load lists from Firestore:', error)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Firestoreリアルタイムリスナーを設定
+  const setupFirestoreListener = () => {
+    if (!USE_FIRESTORE) return
+
+    unsubscribe = listsApi.subscribe((listArray) => {
+      lists.value = listArray.reduce((acc, list) => {
+        acc[list.id] = list
+        return acc
+      }, {} as Record<string, List>)
+
+      // currentListIdが設定されていない、または削除された場合
+      if (!currentListId.value || !lists.value[currentListId.value]) {
+        const firstListId = Object.keys(lists.value)[0]
+        if (firstListId) {
+          currentListId.value = firstListId
+        }
+      }
+    })
+  }
+
+  // クリーンアップ
+  onUnmounted(() => {
+    if (unsubscribe) {
+      unsubscribe()
+    }
+  })
+
   // Getters
   const allLists = computed(() => Object.values(lists.value))
 
@@ -42,7 +108,7 @@ export const useListStore = defineStore('list', () => {
   )
 
   // Actions
-  const createList = (listData: Omit<List, 'id' | 'createdAt'>) => {
+  const createList = async (listData: Omit<List, 'id' | 'createdAt'>) => {
     const list: List = {
       ...listData,
       id: nanoid(),
@@ -50,20 +116,56 @@ export const useListStore = defineStore('list', () => {
     }
 
     lists.value[list.id] = list
-    saveToStorage()
+
+    if (USE_FIRESTORE) {
+      try {
+        await listsApi.create(list)
+      } catch (error) {
+        console.error('Failed to create list in Firestore:', error)
+        delete lists.value[list.id]
+        throw error
+      }
+    } else {
+      saveToStorage()
+    }
+
     return list
   }
 
-  const updateList = (id: string, updates: Partial<List>) => {
-    if (lists.value[id]) {
-      lists.value[id] = { ...lists.value[id], ...updates }
+  const updateList = async (id: string, updates: Partial<List>) => {
+    if (!lists.value[id]) return
+
+    const oldList = { ...lists.value[id] }
+    lists.value[id] = { ...lists.value[id], ...updates }
+
+    if (USE_FIRESTORE) {
+      try {
+        await listsApi.update(id, updates)
+      } catch (error) {
+        console.error('Failed to update list in Firestore:', error)
+        lists.value[id] = oldList
+        throw error
+      }
+    } else {
       saveToStorage()
     }
   }
 
-  const deleteList = (id: string) => {
+  const deleteList = async (id: string) => {
+    const oldList = lists.value[id]
     delete lists.value[id]
-    saveToStorage()
+
+    if (USE_FIRESTORE) {
+      try {
+        await listsApi.delete(id)
+      } catch (error) {
+        console.error('Failed to delete list in Firestore:', error)
+        lists.value[id] = oldList
+        throw error
+      }
+    } else {
+      saveToStorage()
+    }
   }
 
   const setCurrentList = (id: string) => {
@@ -71,16 +173,23 @@ export const useListStore = defineStore('list', () => {
   }
 
   // 初期化
-  loadFromStorage()
+  if (USE_FIRESTORE) {
+    setupFirestoreListener()
+  } else {
+    loadFromStorage()
+  }
 
   return {
     lists,
     currentListId,
+    isLoading,
     allLists,
     currentList,
     createList,
     updateList,
     deleteList,
-    setCurrentList
+    setCurrentList,
+    loadFromStorage,
+    loadFromFirestore
   }
 })

@@ -10,7 +10,8 @@ tone-task.comのUIを参考にしたシンプルなタスク管理ツールのPO
 - **Tailwind CSS**
 - **Pinia** (状態管理)
 - **Radix Vue** (UIコンポーネント)
-- **LocalStorage** (データ永続化)
+- **Firebase** (Firestore / Hosting)
+- **LocalStorage** (オフラインデータ永続化)
 
 ## 実装済み機能
 
@@ -28,7 +29,38 @@ tone-task.comのUIを参考にしたシンプルなタスク管理ツールのPO
 npm install
 ```
 
-### 2. 開発サーバーの起動
+### 2. Firebase設定（オプション）
+
+Firestoreを使用する場合は、以下の手順でセットアップしてください：
+
+#### 2-1. Firebaseプロジェクトの作成
+
+1. [Firebase Console](https://console.firebase.google.com/) にアクセス
+2. 新しいプロジェクトを作成
+3. Firestoreを有効化（テストモードで開始可能）
+
+#### 2-2. 環境変数の設定
+
+```bash
+cp .env.local.example .env.local
+```
+
+`.env.local`を編集して、Firebase Consoleから取得した設定値を入力：
+
+```env
+VITE_USE_FIRESTORE=true
+
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+```
+
+**注意**: `VITE_USE_FIRESTORE=false`に設定すると、LocalStorageが使用されます。
+
+### 3. 開発サーバーの起動
 
 ```bash
 npm run dev
@@ -36,16 +68,52 @@ npm run dev
 
 ブラウザで http://localhost:5173/ にアクセス
 
-### 3. ビルド
+### 4. ビルド
 
 ```bash
 npm run build
 ```
 
-### 4. プレビュー
+### 5. プレビュー
 
 ```bash
 npm run preview
+```
+
+## Firebase Hostingへのデプロイ
+
+### 前提条件
+
+Firebase CLIのインストール：
+
+```bash
+npm install -g firebase-tools
+```
+
+### デプロイ手順
+
+1. Firebaseにログイン：
+
+```bash
+firebase login
+```
+
+2. Firebaseプロジェクトを初期化（初回のみ）：
+
+```bash
+firebase init hosting
+```
+
+- 既存のプロジェクトを選択
+- public directoryは `dist` を指定
+- SPAとして設定: Yes
+- GitHubへの自動デプロイ設定: お好みで
+
+3. ビルドとデプロイ：
+
+```bash
+npm run build
+firebase deploy --only hosting
 ```
 
 ## プロジェクト構成
@@ -75,7 +143,9 @@ src/
 ├── lib/                 # ユーティリティ
 │   ├── types.ts
 │   ├── utils.ts
-│   └── seed.ts
+│   ├── seed.ts
+│   ├── firebase.ts      # Firebase初期化
+│   └── firestore.ts     # Firestore API
 ├── assets/              # スタイル
 │   └── main.css
 ├── App.vue
@@ -129,7 +199,6 @@ git log --oneline
 - リッチテキストエディタ
 - テンプレート機能
 - キーボードショートカット
-- Firebase連携
 - 認証機能
 - テストコード
 
@@ -150,6 +219,8 @@ git log --oneline
 | タスク詳細パネル | ✅ | Sheet使用（右側スライド） |
 | チェックボックス | ✅ | 完了/未完了切り替え |
 | サンプルデータ | ✅ | 初回起動時に自動生成 |
+| Firebase/Firestore統合 | ✅ | 環境変数で切り替え可能 |
+| Firebase Hosting設定 | ✅ | デプロイ準備完了 |
 
 ### 📋 改善候補・今後のタスク
 
