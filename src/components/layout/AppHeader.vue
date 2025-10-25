@@ -54,11 +54,6 @@ const handleSignOut = async () => {
           + 追加
         </Button>
 
-        <!-- リストボタン -->
-        <Button variant="outline" size="sm">
-          ⊞ リスト
-        </Button>
-
         <!-- ログアウトボタン -->
         <Button
           @click="handleSignOut"

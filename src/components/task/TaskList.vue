@@ -5,6 +5,7 @@ import { useListStore } from '@/stores/listStore'
 import { useSortable } from '@vueuse/integrations/useSortable'
 import TaskRow from './TaskRow.vue'
 import TaskPanel from './TaskPanel.vue'
+import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue'
 import type { Task } from '@/lib/types'
 
 const taskStore = useTaskStore()
@@ -13,6 +14,11 @@ const listStore = useListStore()
 const selectedTask = ref<Task | null>(null)
 const showPanel = ref(false)
 const taskListRef = ref<HTMLDivElement | null>(null)
+
+// 削除確認ダイアログの状態
+const isDeleteConfirmOpen = ref(false)
+const deletingTaskId = ref<string | null>(null)
+const deletingTaskName = ref<string>('')
 
 // ドラッグ&ドロップ用のタスクリスト（ref）
 const sortableTasks = ref<Task[]>([])
@@ -40,6 +46,35 @@ const handleClick = (task: Task) => {
 const handleClosePanel = () => {
   showPanel.value = false
   selectedTask.value = null
+}
+
+const handleDeleteRequest = (taskId: string) => {
+  const task = taskStore.tasks[taskId]
+  if (!task) return
+
+  deletingTaskId.value = taskId
+  deletingTaskName.value = task.title
+  isDeleteConfirmOpen.value = true
+}
+
+const handleDeleteConfirm = async () => {
+  if (!deletingTaskId.value) return
+
+  try {
+    await taskStore.deleteTask(deletingTaskId.value)
+
+    // 削除したタスクが選択中だった場合、パネルを閉じる
+    if (selectedTask.value?.id === deletingTaskId.value) {
+      handleClosePanel()
+    }
+
+    isDeleteConfirmOpen.value = false
+    deletingTaskId.value = null
+    deletingTaskName.value = ''
+  } catch (error) {
+    console.error('Failed to delete task:', error)
+    alert('タスクの削除に失敗しました')
+  }
 }
 
 // ドラッグ&ドロップの設定
@@ -104,6 +139,7 @@ useSortable(taskListRef, sortableTasks, {
         :task="task"
         @toggle="handleToggle"
         @click="handleClick"
+        @delete="handleDeleteRequest"
       />
     </div>
 
@@ -118,6 +154,15 @@ useSortable(taskListRef, sortableTasks, {
       :task="selectedTask"
       :open="showPanel"
       @close="handleClosePanel"
+      @delete="handleDeleteRequest(selectedTask.id)"
+    />
+
+    <!-- 削除確認ダイアログ -->
+    <DeleteConfirmDialog
+      :open="isDeleteConfirmOpen"
+      :item-name="deletingTaskName"
+      @close="isDeleteConfirmOpen = false"
+      @confirm="handleDeleteConfirm"
     />
   </div>
 </template>

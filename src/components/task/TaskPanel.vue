@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { Trash2 } from 'lucide-vue-next'
 import { useTaskStore } from '@/stores/taskStore'
 import type { Task } from '@/lib/types'
 import {
@@ -8,6 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDate } from '@/lib/utils'
 
@@ -19,6 +21,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
+  delete: []
 }>()
 
 const taskStore = useTaskStore()
@@ -43,6 +46,10 @@ const handleUpdateStatus = (e: Event) => {
   taskStore.updateTask(props.task.id, {
     status
   })
+}
+
+const handleDelete = () => {
+  emit('delete')
 }
 </script>
 
@@ -115,6 +122,18 @@ const handleUpdateStatus = (e: Event) => {
             タスクを小さな単位に分割して管理できます。<br />
             サブタスクを追加して、作業を整理しましょう。
           </p>
+        </div>
+
+        <!-- 削除ボタン -->
+        <div class="pt-4 border-t border-gray-200">
+          <Button
+            variant="outline"
+            @click="handleDelete"
+            class="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300"
+          >
+            <Trash2 :size="16" class="mr-2" />
+            タスクを削除
+          </Button>
         </div>
       </div>
     </SheetContent>

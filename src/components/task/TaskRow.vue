@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Trash2 } from 'lucide-vue-next'
 import type { Task } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -13,6 +14,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   toggle: [id: string]
   click: [task: Task]
+  delete: [id: string]
 }>()
 
 const formattedDate = computed(() =>
@@ -23,7 +25,7 @@ const formattedDate = computed(() =>
 <template>
   <div
     :data-id="task.id"
-    class="task-row grid grid-cols-[auto_auto_auto_1fr_auto_auto_auto_auto] gap-4 items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+    class="task-row grid grid-cols-[auto_auto_auto_1fr_auto_auto_auto_auto] gap-4 items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors group"
     @click="emit('click', task)"
   >
     <!-- アバター -->
@@ -70,9 +72,13 @@ const formattedDate = computed(() =>
     <!-- タグ -->
     <span class="text-sm text-gray-600">-</span>
 
-    <!-- メニュー -->
-    <button class="text-gray-400 hover:text-gray-600" @click.stop>
-      ⋮
+    <!-- 削除ボタン -->
+    <button
+      class="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition-all p-1 rounded hover:bg-red-50"
+      @click.stop="emit('delete', task.id)"
+      title="タスクを削除"
+    >
+      <Trash2 :size="16" />
     </button>
   </div>
 </template>
