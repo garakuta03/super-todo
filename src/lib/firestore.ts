@@ -101,18 +101,21 @@ export const workspacesApi = {
 
   // リアルタイムリスナー（ユーザーIDでフィルタ）
   subscribe(userId: string, callback: (workspaces: Workspace[]) => void): Unsubscribe {
+    console.log('[Firestore] workspacesApi.subscribe called with userId:', userId)
     const q = query(
       collection(db, WORKSPACES_COLLECTION),
       where('userId', '==', userId),
       orderBy('order')
     )
     return onSnapshot(q, (snapshot) => {
+      console.log('[Firestore] workspacesApi snapshot received:', snapshot.docs.length, 'documents')
       const workspaces = snapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date()
       } as Workspace))
+      console.log('[Firestore] workspacesApi calling callback with:', workspaces.map(w => ({ id: w.id, name: w.name, userId: w.userId })))
       callback(workspaces)
     })
   }
@@ -176,18 +179,21 @@ export const projectsApi = {
 
   // リアルタイムリスナー（全プロジェクト、ユーザーIDでフィルタ）
   subscribe(userId: string, callback: (projects: Project[]) => void): Unsubscribe {
+    console.log('[Firestore] projectsApi.subscribe called with userId:', userId)
     const q = query(
       collection(db, PROJECTS_COLLECTION),
       where('userId', '==', userId),
       orderBy('order')
     )
     return onSnapshot(q, (snapshot) => {
+      console.log('[Firestore] projectsApi snapshot received:', snapshot.docs.length, 'documents')
       const projects = snapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date()
       } as Project))
+      console.log('[Firestore] projectsApi calling callback with:', projects.map(p => ({ id: p.id, name: p.name, workspaceId: p.workspaceId, userId: p.userId })))
       callback(projects)
     })
   },
@@ -269,18 +275,21 @@ export const listsApi = {
 
   // リアルタイムリスナー（全リスト、ユーザーIDでフィルタ）
   subscribe(userId: string, callback: (lists: List[]) => void): Unsubscribe {
+    console.log('[Firestore] listsApi.subscribe called with userId:', userId)
     const q = query(
       collection(db, LISTS_COLLECTION),
       where('userId', '==', userId),
       orderBy('order')
     )
     return onSnapshot(q, (snapshot) => {
+      console.log('[Firestore] listsApi snapshot received:', snapshot.docs.length, 'documents')
       const lists = snapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date()
       } as List))
+      console.log('[Firestore] listsApi calling callback with:', lists.map(l => ({ id: l.id, name: l.name, projectId: l.projectId, userId: l.userId })))
       callback(lists)
     })
   },
@@ -364,11 +373,13 @@ export const tasksApi = {
 
   // リアルタイムリスナー（全タスク、ユーザーIDでフィルタ）
   subscribe(userId: string, callback: (tasks: Task[]) => void): Unsubscribe {
+    console.log('[Firestore] tasksApi.subscribe called with userId:', userId)
     const q = query(
       collection(db, TASKS_COLLECTION),
       where('userId', '==', userId)
     )
     return onSnapshot(q, (snapshot) => {
+      console.log('[Firestore] tasksApi snapshot received:', snapshot.docs.length, 'documents')
       const tasks = snapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id,
@@ -376,6 +387,7 @@ export const tasksApi = {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
         dueDate: doc.data().dueDate?.toDate() || undefined
       } as Task))
+      console.log('[Firestore] tasksApi calling callback with:', tasks.map(t => ({ id: t.id, title: t.title, listId: t.listId, userId: t.userId })))
       callback(tasks)
     })
   },

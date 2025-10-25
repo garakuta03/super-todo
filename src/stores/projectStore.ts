@@ -62,18 +62,26 @@ export const useProjectStore = defineStore('project', () => {
 
   // Firestoreリアルタイムリスナーを設定
   const setupFirestoreListener = () => {
+    console.log('[ProjectStore] setupFirestoreListener called')
     const authStore = useAuthStore()
 
+    console.log('[ProjectStore] authStore.user:', authStore.user)
     if (!authStore.user) {
-      console.warn('Cannot setup project listener: user not authenticated')
+      console.warn('[ProjectStore] Cannot setup project listener: user not authenticated')
       return
     }
 
+    console.log('[ProjectStore] Setting up Firestore listener for userId:', authStore.user.uid)
     unsubscribe = projectsApi.subscribe(authStore.user.uid, (projectArray) => {
+      console.log('[ProjectStore] Received projects from Firestore:', {
+        count: projectArray.length,
+        projects: projectArray.map(p => ({ id: p.id, name: p.name, workspaceId: p.workspaceId, userId: p.userId, order: p.order }))
+      })
       projects.value = projectArray.reduce((acc, project) => {
         acc[project.id] = project
         return acc
       }, {} as Record<string, Project>)
+      console.log('[ProjectStore] Updated projects state:', Object.keys(projects.value).length, 'projects')
     })
   }
 
@@ -82,6 +90,7 @@ export const useProjectStore = defineStore('project', () => {
   watch(
     () => workspaceStore.currentWorkspaceId,
     (newWorkspaceId) => {
+      console.log('[ProjectStore] Workspace changed:', newWorkspaceId)
       if (!newWorkspaceId) {
         currentProjectId.value = ''
         return
@@ -92,11 +101,19 @@ export const useProjectStore = defineStore('project', () => {
         p => p.workspaceId === newWorkspaceId
       )
 
+      console.log('[ProjectStore] Projects in workspace:', {
+        workspaceId: newWorkspaceId,
+        projectCount: workspaceProjects.length,
+        projects: workspaceProjects.map(p => ({ id: p.id, name: p.name }))
+      })
+
       if (workspaceProjects.length > 0) {
         // プロジェクトがある場合は最初のものを選択
         currentProjectId.value = workspaceProjects[0].id
+        console.log('[ProjectStore] Selected first project:', workspaceProjects[0].id)
       } else {
         currentProjectId.value = ''
+        console.log('[ProjectStore] No projects in workspace')
       }
     },
     { immediate: true }
