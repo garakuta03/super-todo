@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useTaskStore } from '@/stores/taskStore'
 import { useListStore } from '@/stores/listStore'
 import { useSortable } from '@vueuse/integrations/useSortable'
@@ -14,10 +14,19 @@ const selectedTask = ref<Task | null>(null)
 const showPanel = ref(false)
 const taskListRef = ref<HTMLDivElement | null>(null)
 
+// ドラッグ&ドロップ用のタスクリスト（ref）
+const sortableTasks = ref<Task[]>([])
+
+// 現在のリストのタスクを取得（computed）
 const tasks = computed(() => {
   if (!listStore.currentListId) return []
   return taskStore.getTasksByListId(listStore.currentListId)
 })
+
+// tasksが変更されたらsortableTasksを更新
+watch(tasks, (newTasks) => {
+  sortableTasks.value = [...newTasks]
+}, { immediate: true })
 
 const handleToggle = (id: string) => {
   taskStore.toggleTask(id)
@@ -34,26 +43,28 @@ const handleClosePanel = () => {
 }
 
 // ドラッグ&ドロップの設定
-useSortable(taskListRef, tasks.value, {
+useSortable(taskListRef, sortableTasks, {
   animation: 150,
   handle: '.drag-handle',
   ghostClass: 'opacity-50',
   onEnd: async (event) => {
+    console.log('[TaskList] Drag end:', event)
     const { oldIndex, newIndex } = event
-    if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
+    if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) {
+      console.log('[TaskList] No reorder needed')
+      return
+    }
 
     // 並び替え後のタスクIDの配列を作成
-    const reorderedTasks = [...tasks.value]
-    const [movedTask] = reorderedTasks.splice(oldIndex, 1)
-    reorderedTasks.splice(newIndex, 0, movedTask)
-
-    const taskIds = reorderedTasks.map(t => t.id)
+    const taskIds = sortableTasks.value.map(t => t.id)
+    console.log('[TaskList] New task order:', taskIds)
 
     // Firestoreに並び順を保存
     try {
       await taskStore.reorderTasks(taskIds)
+      console.log('[TaskList] Reorder successful')
     } catch (error) {
-      console.error('Failed to reorder tasks:', error)
+      console.error('[TaskList] Failed to reorder tasks:', error)
     }
   }
 })
@@ -81,9 +92,9 @@ useSortable(taskListRef, tasks.value, {
     </div>
 
     <!-- タスク一覧 -->
-    <div v-if="tasks.length > 0" ref="taskListRef">
+    <div v-if="sortableTasks.length > 0" ref="taskListRef">
       <TaskRow
-        v-for="task in tasks"
+        v-for="task in sortableTasks"
         :key="task.id"
         :task="task"
         @toggle="handleToggle"
